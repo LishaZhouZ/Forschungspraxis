@@ -31,8 +31,8 @@ class train_MWCNN(object):
             #optimizer= tf.train.GradientDescentOptimizer(self.lr, name='GradientDescent')
             self.optimizer = tf.keras.optimizers.MomentumOptimizer(
                 self.__learning_rate, momentum=0.9)
-
-        self.train_loss = tf.keras.metrics.Mean(name='train_loss')
+        self.ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=self.optimizer, net=self.model)
+        self.manager = tf.train.CheckpointManager(self.ckpt, './tf_ckpts', max_to_keep=3)
 
     def loss_fn(self, prediction, groundtruth):
         #inv_converted = wavelet_inverse_conversion(prediction)
@@ -48,6 +48,7 @@ class train_MWCNN(object):
         #converted = wavelet_conversion(images)
         with tf.GradientTape() as tape:
             reconstructed = self.model(images, training = True)
+            # test code
             #plt.imshow(images[1,:,:,:]/255)
             #plt.show()
             #plt.imshow(reconstructed[1,:,:,:].numpy()/255)
@@ -56,25 +57,40 @@ class train_MWCNN(object):
             total_loss = self.loss_fn(reconstructed, labels)
             tape.watch(self.model.trainable_variables)
         grads = tape.gradient(total_loss, self.model.trainable_weights)
-        
         # Training loop
         # Optimize the model
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
+        
+        return total_loss
+
+    def train_and_checkpoint(self, train_dataset, epochs):
+        self.ckpt.restore(self.manager.latest_checkpoint)
+        if self.manager.latest_checkpoint:
+            print("Restored from {}".format(self.manager.latest_checkpoint))
+        else:
+            print("Initializing from scratch.")
+
+        for epoch in range(epochs):
+            print('Start of epoch %d' % (epoch,))
+            # Iterate over the batches of the dataset.
+            for labels, images in train_dataset:
+                ## main step
+                loss = self.train_step(images,labels)
                 
+                self.ckpt.step.assign_add(1)
+                if int(self.ckpt.step) % 10 == 0:
+                    save_path = self.manager.save()
+                    print("Saved checkpoint for step {}: {}".format(int(self.ckpt.step), save_path) + "-- loss {:1.2f}".format(loss.numpy()))
 
-
+        
+        
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
     train_dataset = read_and_decode(
         './patches/MWCNN_train_data_debug.tfrecords', 2, 192)
     train_proces = train_MWCNN(2, 192, learning_rate=0.01)
     epochs = 1
+    train_proces.train_and_checkpoint(train_dataset, epochs)
     
-    # Iterate over epochs.
-    for epoch in range(epochs):
-        print('Start of epoch %d' % (epoch,))
-        # Iterate over the batches of the dataset.
-        steps = 1
-        for labels, images in train_dataset:
-            train_proces.train_step(images,labels)
-    print(train_proces.model.summary())
+
+
