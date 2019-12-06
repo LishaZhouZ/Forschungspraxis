@@ -30,7 +30,6 @@ class WaveletInvLayer(tf.keras.layers.Layer):
 
   def call(self, inputs):
     sz = inputs.shape
-    reconstructed = tf.zeros((sz[0], sz[1]*2, sz[2]*2, sz[3]/4))
     inputs = inputs/2
     a = tf.cast(sz[3]/4, tf.int32)
     LL = inputs[:, :, :, 0:a]
@@ -46,26 +45,39 @@ class WaveletInvLayer(tf.keras.layers.Layer):
     reconstructed = tf.nn.depth_to_space(concated, 2)
     return reconstructed
 
+#return the average psnr for
+class PSNRMetric(tf.keras.metrics.Metric):
+
+  def __init__(self, name='psnr', **kwargs):
+    super(PSNRMetric, self).__init__(name=name, **kwargs)
+    self.psnr = self.add_weight(name='psnr', initializer='zeros')
+    self.count = self.add_weight(name='count', initializer='zeros')
+  
+  def update_state(self, y_true, y_pred):
+    mse = imcpsnr(y_true, y_pred)
+    self.psnr.assign_add(mse)
+    self.count.assign_add(1)
+
+  def result(self):
+    return self.psnr/self.count
 
 def build_model(filters):
-    my_initial = tf.initializers.he_normal()
-    my_regular = tf.keras.regularizers.l2(l=0.0001)
-    kernel_size = (3,3)
-    model = tf.keras.Sequential()
-    model.add(WaveletConvLayer())
-    model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
-                kernel_initializer=my_initial, kernel_regularizer=my_regular))
-    #activation?
-
-    for i in range(2): 
-        model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
-                activation=tf.nn.relu, kernel_initializer=my_initial, kernel_regularizer=my_regular))
-        model.add(layers.BatchNormalization())
-        model.add(layers.ReLU())
-    #    #assert model.output_shape == (None, 7, 7, 256) # Note: None is the batch size
-
-    model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
-                activation=tf.nn.relu, kernel_initializer=my_initial, kernel_regularizer=my_regular))
-    model.add(WaveletInvLayer())
-    
-    return model
+  my_initial = tf.initializers.he_normal()
+  my_regular = tf.keras.regularizers.l2(l=0.0001)
+  kernel_size = (3,3)
+  model = tf.keras.Sequential()
+  model.add(WaveletConvLayer())
+  model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
+              kernel_initializer=my_initial, kernel_regularizer=my_regular))
+  #activation?
+  for i in range(2): 
+      model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
+              activation=tf.nn.relu, kernel_initializer=my_initial, kernel_regularizer=my_regular))
+      model.add(layers.BatchNormalization())
+      model.add(layers.ReLU())
+  #    #assert model.output_shape == (None, 7, 7, 256) # Note: None is the batch size
+  model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
+              activation=tf.nn.relu, kernel_initializer=my_initial, kernel_regularizer=my_regular))
+  model.add(WaveletInvLayer())
+  
+  return model

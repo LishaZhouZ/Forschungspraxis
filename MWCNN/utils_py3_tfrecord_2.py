@@ -57,16 +57,19 @@ def extract_fn(data_record):
     return img_label, img_input
 
 
-def read_and_decode(filename, batch_size, patch_size):
+def read_and_decode(filename, batch_size):
     #arg_patch_size = tf.constant(patch_size, dtype=tf.int64)
     # read from file path
     raw_image_dataset = tf.data.TFRecordDataset(filename)
     # extract the data from raw image
     extracted_dataset = raw_image_dataset.map(extract_fn)
     # shuffle
-    extracted_dataset = extracted_dataset.shuffle(1000 + 3 * batch_size)
-    extracted_dataset = extracted_dataset.batch(batch_size)
-    return extracted_dataset
+    if batch_size == None:
+        return extracted_dataset
+    else:
+        extracted_dataset = extracted_dataset.shuffle(1000 + 3 * batch_size)
+        extracted_dataset = extracted_dataset.batch(batch_size)
+        return extracted_dataset
 
 
 def load_images(filelist):
@@ -109,7 +112,8 @@ def imcpsnr(im1, im2, peak=255, b=0):
     im2 = np.squeeze(im2)
     im1 = im1[b:im1.shape[0]-b, b:im1.shape[1]-b, :]
     im2 = im2[b:im2.shape[0]-b, b:im2.shape[1]-b, :]
-    mse = ((im1.astype(np.float) - im2.astype(np.float)) ** 2).mean()
+    mse = ((im1.astype(np.float) - im2.astype(np.float)) ** 2)
+    mse = mse.mean()
     return 10 * np.log10(255 ** 2 / mse)
 
 

@@ -4,13 +4,6 @@ from seq_model_MWCNN import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-#class MeanSquaredError(Loss):
-#  def call(self, y_true, y_pred):
-#    y_pred = ops.convert_to_tensor(y_pred)
-#    y_true = math_ops.cast(y_true, y_pred.dtype)
-#   return K.mean(math_ops.square(y_pred - y_true), axis=-1)
-
-
 class train_MWCNN(object):
     def __init__(self, batch_size, patch_size, learning_rate, optimizer='Adam', name='MWCNN'):
         super(train_MWCNN, self).__init__()
@@ -22,6 +15,7 @@ class train_MWCNN(object):
             './logs/test')
         self.__learning_rate = learning_rate
         self.model = build_model(64)
+        self.metrics = PSNRMetric()
         if optimizer == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(
                 self.__learning_rate, name='AdamOptimizer')
@@ -44,10 +38,10 @@ class train_MWCNN(object):
         
     #for one batch
     @tf.function
-    def train_step(self, images, labels):
+    def train_step(self, images, labels, training):
         #converted = wavelet_conversion(images)
         with tf.GradientTape() as tape:
-            reconstructed = self.model(images, training = True)
+            reconstructed = self.model(images, training = training)
             # test code
             #plt.imshow(images[1,:,:,:]/255)
             #plt.show()
@@ -55,7 +49,7 @@ class train_MWCNN(object):
             #plt.show()
             # Compute reconstruction loss
             total_loss = self.loss_fn(reconstructed, labels)
-            tape.watch(self.model.trainable_variables)
+
         grads = tape.gradient(total_loss, self.model.trainable_weights)
         # Training loop
         # Optimize the model
@@ -63,7 +57,7 @@ class train_MWCNN(object):
         
         return total_loss
 
-    def train_and_checkpoint(self, train_dataset, epochs):
+    def train_and_checkpoint(self, train_dataset, epochs, val_dataset):
         self.ckpt.restore(self.manager.latest_checkpoint)
         if self.manager.latest_checkpoint:
             print("Restored from {}".format(self.manager.latest_checkpoint))
@@ -75,22 +69,29 @@ class train_MWCNN(object):
             # Iterate over the batches of the dataset.
             for labels, images in train_dataset:
                 ## main step
-                loss = self.train_step(images,labels)
-                
+                loss = self.train_step(images, labels, training = True)
                 self.ckpt.step.assign_add(1)
                 if int(self.ckpt.step) % 10 == 0:
                     save_path = self.manager.save()
                     print("Saved checkpoint for step {}: {}".format(int(self.ckpt.step), save_path) + "-- loss {:1.2f}".format(loss.numpy()))
+        
+        for label_val, images_val in val_dataset:
+            predict_val = self.model(images_val, training = False)
+            # Update val metrics
+            self.metrics.update_state(label_val, predict_val)
+        val_acc = self.metrics.result()
+        self.metrics.reset_states()
+        print('Validation psnr: %s' % (float(val_acc),))
 
-        
-        
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
     train_dataset = read_and_decode(
-        './patches/MWCNN_train_data_debug.tfrecords', 2, 192)
-    train_proces = train_MWCNN(2, 192, learning_rate=0.01)
-    epochs = 1
-    train_proces.train_and_checkpoint(train_dataset, epochs)
+        './patches/MWCNN_train_data_debug.tfrecords', 5, 192)
+    val_dataset = read_and_decode(
+        './patches/MWCNN_train_data_debug.tfrecords', 5, 192)
+    train_proces = train_MWCNN(5, 192, learning_rate=0.01)
+    epochs = 0
+    train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
     
 
 
