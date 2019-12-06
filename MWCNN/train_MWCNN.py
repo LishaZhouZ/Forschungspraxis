@@ -86,9 +86,9 @@ class train_MWCNN(object):
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
     train_dataset = read_and_decode(
-        './patches/MWCNN_train_data_debug.tfrecords', 5, 192)
+        './patches/MWCNN_train_data_debug.tfrecords', 5)
     val_dataset = read_and_decode(
-        './patches/MWCNN_train_data_debug.tfrecords', 5, 192)
+        './patches/MWCNN_train_data_debug.tfrecords', 5)
     train_proces = train_MWCNN(5, 192, learning_rate=0.01)
     epochs = 0
     train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
