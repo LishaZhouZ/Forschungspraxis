@@ -29,7 +29,7 @@ def generate_patches():
     filepaths_input = sorted(args.src_dir_input.glob('*'))
 
     if isDebug:
-        numDebug = 20
+        numDebug = 100
         filepaths_label = filepaths_label[:numDebug] # take only ten images to quickly debug
         filepaths_input = filepaths_input[:numDebug]
     print("number of training images %d" % len(filepaths_label))

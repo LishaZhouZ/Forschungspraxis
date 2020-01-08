@@ -42,13 +42,15 @@ class train_MWCNN(object):
         #converted = wavelet_conversion(images)
         with tf.GradientTape() as tape:
             reconstructed = self.model(images, training = training)
+            output = images + reconstructed
             # test code
             #plt.imshow(images[1,:,:,:]/255)
             #plt.show()
             #plt.imshow(reconstructed[1,:,:,:].numpy()/255)
             #plt.show()
+            #psnr = imcpsnr(images[1,:,:,:], reconstructed[1,:,:,:])
             # Compute reconstruction loss
-            total_loss = self.loss_fn(reconstructed, labels)
+            total_loss = self.loss_fn(output, labels)
 
         grads = tape.gradient(total_loss, self.model.trainable_weights)
         # Training loop
@@ -86,11 +88,11 @@ class train_MWCNN(object):
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
     train_dataset = read_and_decode(
-        './patches/MWCNN_train_data_debug.tfrecords', 5)
+        './patches/MWCNN_train_data_debug.tfrecords', 24)
     val_dataset = read_and_decode(
-        './patches/MWCNN_train_data_debug.tfrecords', 5)
-    train_proces = train_MWCNN(5, 192, learning_rate=0.01)
-    epochs = 0
+        './patches/MWCNN_train_data_debug.tfrecords', 24)
+    train_proces = train_MWCNN(24, 192, learning_rate=0.01)
+    epochs = 1
     train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
     
 

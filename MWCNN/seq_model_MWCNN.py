@@ -12,10 +12,10 @@ class WaveletConvLayer(tf.keras.layers.Layer):
 
   def call(self, inputs):
     inputs = inputs/2
-    im_c1 = inputs[:, 0::2, 0::2, :]
-    im_c2 = inputs[:, 0::2, 1::2, :]
-    im_c3 = inputs[:, 1::2, 0::2, :]
-    im_c4 = inputs[:, 1::2, 1::2, :]
+    im_c1 = inputs[:, 0::2, 0::2, :] # 1
+    im_c2 = inputs[:, 0::2, 1::2, :] # right up
+    im_c3 = inputs[:, 1::2, 0::2, :] # left down
+    im_c4 = inputs[:, 1::2, 1::2, :] # right right
 
     LL = im_c1 + im_c2 + im_c3 + im_c4
     LH = -im_c1 - im_c2 + im_c3 + im_c4
@@ -38,7 +38,7 @@ class WaveletInvLayer(tf.keras.layers.Layer):
     HH = inputs[:, :, :, 3*a:]
     
     aa = LL - LH - HL + HH
-    bb = LL - LH + HL + HH
+    bb = LL - LH + HL - HH
     cc = LL + LH - HL - HH
     dd = LL + LH + HL + HH
     concated = tf.concat([aa, bb, cc, dd], 3)
@@ -67,17 +67,17 @@ def build_model(filters):
   kernel_size = (3,3)
   model = tf.keras.Sequential()
   model.add(WaveletConvLayer())
-  model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
-              kernel_initializer=my_initial, kernel_regularizer=my_regular))
+  #model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
+  #            kernel_initializer=my_initial, kernel_regularizer=my_regular))
   #activation?
-  for i in range(2): 
-      model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
-              activation=tf.nn.relu, kernel_initializer=my_initial, kernel_regularizer=my_regular))
-      model.add(layers.BatchNormalization())
-      model.add(layers.ReLU())
+  #for i in range(2): 
+  #    model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
+  #            kernel_initializer=my_initial, kernel_regularizer=my_regular))
+  #    model.add(layers.BatchNormalization())
+  #    model.add(layers.ReLU())
   #    #assert model.output_shape == (None, 7, 7, 256) # Note: None is the batch size
-  model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
-              activation=tf.nn.relu, kernel_initializer=my_initial, kernel_regularizer=my_regular))
+  #model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
+  #            kernel_initializer=my_initial, kernel_regularizer=my_regular))
   model.add(WaveletInvLayer())
   
   return model
