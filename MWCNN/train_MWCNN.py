@@ -15,7 +15,7 @@ class train_MWCNN(object):
         self.__test_summary_writer = tf.summary.create_file_writer(
             './logs/test')
         self.__learning_rate = learning_rate
-        self.model = build_model(filter_num)
+        self.model = build_model()
         self.metrics = PSNRMetric()
         if optimizer == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(
@@ -41,15 +41,17 @@ class train_MWCNN(object):
         # num_updates in one epoch
         a = num_update*epoch / num_updates_in_one_epoch
         if a == 10:
-            return self.__learning_rate / 2.0
+            self.__learning_rate = self.__learning_rate / 2.0
         elif a == 20:
-            return self.__learning_rate / 10.0
+            self.__learning_rate = self.__learning_rate / 10.0
         elif a == 30:
-            return self.__learning_rate / 20.0
+            self.__learning_rate = self.__learning_rate / 20.0
         elif a == 40:
-            return self.__learning_rate / 100.0
+            self.__learning_rate = self.__learning_rate /100.0
         else:
-            return self.__learning_rate
+            self.__learning_rate = self.__learning_rate
+        
+        return self.__learning_rate
         #elif args.optimizer=='SGD':
             #decay exponentially from 1e-1 to 1e-4 for the 50 epochs.
         #    for epoch in range (1, epoch):

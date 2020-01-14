@@ -61,23 +61,53 @@ class PSNRMetric(tf.keras.metrics.Metric):
   def result(self):
     return self.psnr/self.count
 
-def build_model(filters):
+def build_model():
   my_initial = tf.initializers.he_normal()
   my_regular = tf.keras.regularizers.l2(l=0.0001)
   kernel_size = (3,3)
   model = tf.keras.Sequential()
+  # 1.
   model.add(WaveletConvLayer())
-  model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
-              kernel_initializer=my_initial, kernel_regularizer=my_regular))
-  #activation?
-  for i in range(2): 
-      model.add(layers.Conv2D(filters, kernel_size, padding = 'SAME',
-              kernel_initializer=my_initial, kernel_regularizer=my_regular))
-      model.add(layers.BatchNormalization())
-      model.add(layers.ReLU())
-      #assert model.output_shape == (None, 7, 7, 256) # Note: None is the batch size
   
-  model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
+  for i in range(4): 
+    model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
+      kernel_initializer=my_initial, kernel_regularizer=my_regular))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+  
+  #2.
+  model.add(WaveletConvLayer())
+  for i in range(4): 
+    model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
+      kernel_initializer=my_initial, kernel_regularizer=my_regular))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+  
+  #3.
+  model.add(WaveletConvLayer())
+  for i in range(4): 
+    model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
+      kernel_initializer=my_initial, kernel_regularizer=my_regular))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+  
+  #3
+  model.add(WaveletInvLayer())
+  for i in range(4): 
+    model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
+      kernel_initializer=my_initial, kernel_regularizer=my_regular))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+  
+  #2
+  model.add(WaveletInvLayer())
+  for i in range(3): 
+    model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
+      kernel_initializer=my_initial, kernel_regularizer=my_regular))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+  
+  model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
               kernel_initializer=my_initial, kernel_regularizer=my_regular))
   model.add(WaveletInvLayer())
   
