@@ -107,7 +107,7 @@ def build_model():
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
   
-  model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
+  model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
               kernel_initializer=my_initial, kernel_regularizer=my_regular))
   model.add(WaveletInvLayer())
   

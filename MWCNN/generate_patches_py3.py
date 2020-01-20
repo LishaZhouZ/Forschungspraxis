@@ -1,4 +1,3 @@
-
 import argparse
 import glob
 from PIL import Image
@@ -8,25 +7,18 @@ import tensorflow as tf
 import time
 from pathlib import Path
 from utils_py3_tfrecord_2 import *
+from config import *
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--src_dir_label', dest='src_dir_label', default= Path("./images/train/groundtruth"), help='dir of ground truth data')
-parser.add_argument('--src_dir_input', dest='src_dir_input', default= Path("./images/train/CompressedQ10"), help='dir of interpolated Bayer data')
-parser.add_argument('--save_dir', dest='save_dir', default='./patches', help='dir of patches')
-parser.add_argument('--patch_size', dest='pat_size', type=int, default=192, help='patch size')
 parser.add_argument('--stride', dest='stride', type=int, default=100, help='stride')
 parser.add_argument('--step', dest='step', type=int, default=0, help='step, or padding')
-parser.add_argument('--batch_size', dest='bat_size', type=int, default=24, help='batch size')
 parser.add_argument('--augment', dest='DATA_AUG_TIMES', type=int, default=1, help='data augmentation, used to creat more data')
 # check output arguments
-parser.add_argument('--Train_tfrecord', dest='tfRecord_train', default='MWCNN_train_data_debug.tfrecords', help='training record file')
-parser.add_argument('--debug', dest='isDebug', type=bool, default=False, help='Debug Mode')
 args = parser.parse_args()
 
-def generate_patches():
-    isDebug = args.isDebug
-    filepaths_label = sorted(args.src_dir_label.glob('*'))
-    filepaths_input = sorted(args.src_dir_input.glob('*'))
+def generate_patches(dir_label, dir_input, save_dir, isDebug, tfRecord_name):
+    filepaths_label = sorted(dir_label.glob('*'))
+    filepaths_input = sorted(dir_input.glob('*'))
 
     if isDebug:
         numDebug = 100
@@ -37,22 +29,22 @@ def generate_patches():
     for i in range(len(filepaths_label)):
         img = Image.open(filepaths_label[i])
         im_h, im_w = img.size
-        for x in range(0 + args.step, (im_h - args.pat_size), args.stride):
-            for y in range(0 + args.step, (im_w - args.pat_size), args.stride):
+        for x in range(0 + args.step, (im_h - patch_size), args.stride):
+            for y in range(0 + args.step, (im_w - patch_size), args.stride):
                 count += 1
     origin_patch_num = count * (args.DATA_AUG_TIMES+1)
-    if origin_patch_num % args.bat_size != 0:
-        numPatches = int(origin_patch_num / args.bat_size) * args.bat_size
+    if origin_patch_num % batch_size != 0:
+        numPatches = int(origin_patch_num / batch_size) * batch_size
     else:
         numPatches = int(origin_patch_num)
-    print("Total patches = %d , batch size = %d, total batches = %d" %(numPatches, args.bat_size, numPatches / args.bat_size))
+    print("Total patches = %d , batch size = %d, total batches = %d" %(numPatches, batch_size, numPatches / batch_size))
     time.sleep(2)
-    if not os.path.exists(args.save_dir):
-        os.mkdir(args.save_dir)    
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)    
     count = 0
 
     # generate patches
-    writer = tf.io.TFRecordWriter(args.save_dir + '/' + args.tfRecord_train)
+    writer = tf.io.TFRecordWriter(save_dir + '/' + tfRecord_name)
     for i in range(len(filepaths_label)):
         img = Image.open(filepaths_label[i])
         img_input = Image.open(filepaths_input[i])
@@ -62,14 +54,14 @@ def generate_patches():
         im_h, im_w, im_c = img_s.shape
         print("The %dth image of %d training images" %(i+1, len(filepaths_label)))
         for j in range(args.DATA_AUG_TIMES):
-            for x in range(0 + args.step, im_h - args.pat_size, args.stride):
-                for y in range(0 + args.step, im_w - args.pat_size, args.stride):
+            for x in range(0 + args.step, im_h - patch_size, args.stride):
+                for y in range(0 + args.step, im_w - patch_size, args.stride):
                     if j == 0:
                         random_seed = 0
                     else:
                         random_seed = random.randint(1, 7)
-                    image_label = data_augmentation(img_s[x:x + args.pat_size, y:y + args.pat_size, 0:3], random_seed) # some images have an extra blank channel 
-                    image_bayer = data_augmentation(img_s_input[x:x + args.pat_size, y:y + args.pat_size, 0:3], random_seed)
+                    image_label = data_augmentation(img_s[x:x + patch_size, y:y + patch_size, 0:3], random_seed) # some images have an extra blank channel 
+                    image_bayer = data_augmentation(img_s_input[x:x + patch_size, y:y + patch_size, 0:3], random_seed)
                     
                     image_label = image_label.tobytes()
                     image_bayer = image_bayer.tobytes()
@@ -83,8 +75,21 @@ def generate_patches():
                     else:
                         break
     writer.close()
-    print("Total patches = %d , batch size = %d, total batches = %d" %(numPatches, args.bat_size, numPatches / args.bat_size))
+    print("Total patches = %d , batch size = %d, total batches = %d" %(numPatches, batch_size, numPatches / batch_size))
     print("Training data has been written into TFrecord.")
 
 if __name__ == '__main__': 
-    generate_patches()
+    src_dir_label = Path("./images/train/groundtruth")
+    src_dir_input = Path("./images/train/CompressedQ10")
+    save_dir = './patches'
+    isDebug = False
+    tfRecord_name = 'MWCNN_train_data.tfrecords'
+    generate_patches(src_dir_label, src_dir_input, save_dir, isDebug, tfRecord_name)
+
+    #For validation data
+    val_dir_label = Path("./images/test/groundtruth")
+    val_dir_input = Path("./images/test/CompressedQ10")
+    tfRecord_val_name = 'MWCNN_validation_data.tfrecords'
+    generate_patches(val_dir_label, val_dir_input, save_dir, isDebug, tfRecord_val_name)
+
+
