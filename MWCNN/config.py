@@ -1,5 +1,5 @@
-batch_size = 24
-patch_size = 240
+batch_size = 6
+patch_size = 256
 learning_rate = 0.001
 epochs = 40
 

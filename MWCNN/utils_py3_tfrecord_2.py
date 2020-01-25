@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from msssim import MultiScaleSSIM
 import IPython.display as display
+from config import *
 
 
 def data_augmentation(image, mode):
@@ -47,11 +48,11 @@ def extract_fn(data_record):
             'img_bayer': tf.io.FixedLenFeature(shape=(), dtype=tf.string),
         })
     img_input_de = tf.io.decode_raw(features['img_bayer'], tf.uint8)
-    img_input = tf.reshape(img_input_de, [192, 192, 3])
+    img_input = tf.reshape(img_input_de, [patch_size, patch_size, 3])
     img_input = tf.cast(img_input, tf.float32)
 
     img_label_de = tf.io.decode_raw(features['img_label'], tf.uint8)
-    img_label = tf.reshape(img_label_de, [192, 192, 3])
+    img_label = tf.reshape(img_label_de, [patch_size, patch_size, 3])
     img_label = tf.cast(img_label, tf.float32)
 
     return img_label, img_input
