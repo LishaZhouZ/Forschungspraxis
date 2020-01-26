@@ -21,7 +21,7 @@ def generate_patches(dir_label, dir_input, save_dir, isDebug, tfRecord_name):
     filepaths_input = sorted(dir_input.glob('*'))
 
     if isDebug:
-        numDebug = 100
+        numDebug = 50
         filepaths_label = filepaths_label[:numDebug] # take only ten images to quickly debug
         filepaths_input = filepaths_input[:numDebug]
     print("number of training images %d" % len(filepaths_label))
@@ -32,7 +32,7 @@ def generate_patches(dir_label, dir_input, save_dir, isDebug, tfRecord_name):
         for x in range(0 + args.step, (im_h - patch_size), args.stride):
             for y in range(0 + args.step, (im_w - patch_size), args.stride):
                 count += 1
-    origin_patch_num = count * (args.DATA_AUG_TIMES+1)
+    origin_patch_num = count * (args.DATA_AUG_TIMES)
     if origin_patch_num % batch_size != 0:
         numPatches = int(origin_patch_num / batch_size) * batch_size
     else:
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     src_dir_label = Path("./images/train/groundtruth")
     src_dir_input = Path("./images/train/CompressedQ10")
     save_dir = './patches'
-    isDebug = False
+    isDebug = True
     tfRecord_name = 'MWCNN_train_data.tfrecords'
     generate_patches(src_dir_label, src_dir_input, save_dir, isDebug, tfRecord_name)
 
