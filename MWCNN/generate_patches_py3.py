@@ -82,7 +82,7 @@ if __name__ == '__main__':
     src_dir_label = Path("./images/train/groundtruth")
     src_dir_input = Path("./images/train/CompressedQ10")
     save_dir = './patches'
-    isDebug = True
+    isDebug = False
     tfRecord_name = 'MWCNN_train_data.tfrecords'
     generate_patches(src_dir_label, src_dir_input, save_dir, isDebug, tfRecord_name)
 

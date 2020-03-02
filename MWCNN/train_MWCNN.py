@@ -4,6 +4,7 @@ from seq_model_MWCNN import *
 import numpy as np
 import matplotlib.pyplot as plt
 from config import *
+import datetime
 
 class train_MWCNN(object):
     def __init__(self, batch_size, patch_size, learning_rate, optimizer='Adam', name='MWCNN'):
@@ -11,9 +12,9 @@ class train_MWCNN(object):
         self.__batch_size = batch_size
         self.__patch_size = patch_size
         self.__train_summary_writer = tf.summary.create_file_writer(
-            './logs/train')
+            './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'/train')
         self.__test_summary_writer = tf.summary.create_file_writer(
-            './logs/test')
+            './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'/test')
         self.__learning_rate = learning_rate
         self.model = build_model()
         self.metrics = PSNRMetric()
@@ -81,16 +82,18 @@ class train_MWCNN(object):
                 ## main step
                 loss = self.train_step(images, labels, training = True)
                 epoch_loss_avg(loss)
-
                 self.ckpt.step.assign_add(1)
-                if int(self.ckpt.step) % 10 == 0:
+                if int(self.ckpt.step) % 100 == 0:
                     save_path = self.manager.save()
                     print("Saved checkpoint for step {}: {}".format(int(self.ckpt.step), save_path) + "-- loss {:1.2f}".format(loss.numpy()))
-            # evaluate after each epoch
-            self.train_loss_result.append(epoch_loss_avg.result())
-            self.lr.append(self.optimizer.lr)
+
+            with self.__train_summary_writer.as_default():
+                tf.summary.scalar('loss', epoch_loss_avg.result(), step=epoch)
+                tf.summary.scalar('optimizer_lr', self.optimizer.lr, step=epoch)
+                
             acc = self.evaluate_model(val_dataset)
-            self.train_validation_result.append(acc)
+            with self.__train_summary_writer.as_default():
+                tf.summary.scalar('validation_accuarcy', acc, step=epoch)
 
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
