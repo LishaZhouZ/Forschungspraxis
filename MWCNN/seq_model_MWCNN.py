@@ -47,7 +47,6 @@ class WaveletInvLayer(tf.keras.layers.Layer):
 
 #return the average psnr for
 class PSNRMetric(tf.keras.metrics.Metric):
-
   def __init__(self, name='psnr', **kwargs):
     super(PSNRMetric, self).__init__(name=name, **kwargs)
     self.psnr = self.add_weight(name='psnr', initializer='zeros')
@@ -60,6 +59,20 @@ class PSNRMetric(tf.keras.metrics.Metric):
 
   def result(self):
     return self.psnr/self.count
+
+class MS_SSIMMetric(tf.keras.metrics.Metric):
+  def __init__(self, name='psnr', **kwargs):
+    super(MS_SSIMMetric, self).__init__(name=name, **kwargs)
+    self.ms_ssim = self.add_weight(name='ms_ssim', initializer='zeros')
+    self.count = self.add_weight(name='count', initializer='zeros')
+  
+  def update_state(self, y_true, y_pred):
+    mssim = tf.image.ssim_multiscale(y_pred, y_true, 255)
+    self.ms_ssim.assign_add(mssim)
+    self.count.assign_add(1)
+
+  def result(self):
+    return self.ms_ssim/self.count
 
 def build_model():
   my_initial = tf.initializers.he_normal()

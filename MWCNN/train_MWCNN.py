@@ -17,7 +17,6 @@ class train_MWCNN(object):
             './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'/test')
         self.__learning_rate = learning_rate
         self.model = build_model()
-        self.metrics = PSNRMetric()
         if optimizer == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(
                 self.__learning_rate, name='AdamOptimizer')
@@ -28,10 +27,7 @@ class train_MWCNN(object):
             self.optimizer = tf.keras.optimizers.MomentumOptimizer(
                 self.__learning_rate, momentum=0.9)
         self.ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=self.optimizer, net=self.model)
-        self.manager = tf.train.CheckpointManager(self.ckpt, './tf_ckpts')
-        self.train_loss_result = []
-        self.train_validation_result = []
-        self.lr = []
+        self.manager = tf.train.CheckpointManager(self.ckpt, './tf_ckpts', max_to_keep=None)
 
 
     def loss_fn(self, prediction, groundtruth):
@@ -57,14 +53,21 @@ class train_MWCNN(object):
         return total_loss
     
     def evaluate_model(self, val_dataset):
+        psnr = PSNRMetric()
+        epoch_loss = tf.keras.metrics.Mean()
+        ms_ssim = MS_SSIMMetric()
         for label_val, images_val in val_dataset:
             predict_val = images_val + self.model(images_val, training = False)
             # Update val metrics
-            self.metrics.update_state(label_val, predict_val)
-        val_acc = self.metrics.result()
-        self.metrics.reset_states()
-        print('Validation psnr: %s' % (float(val_acc),))
-        return val_acc
+            loss = self.loss_fn(predict_val, label_val)
+            psnr.update_state(label_val, predict_val)
+            epoch_loss(loss)
+            ms_ssim.update_state(label_val, predict_val)
+        val_psnr = psnr.result()
+        val_loss = epoch_loss.result()
+        ms_ssim = ms_ssim.result()
+        print('Validation psnr: %s' % (float(val_psnr),))
+        return val_psnr, val_loss, ms_ssim
 
     def train_and_checkpoint(self, train_dataset, epochs, val_dataset):
         self.ckpt.restore(self.manager.latest_checkpoint)
@@ -72,33 +75,29 @@ class train_MWCNN(object):
             print("Restored from {}".format(self.manager.latest_checkpoint))
         else:
             print("Initializing from scratch.")
-
-        for epoch in range(1, epochs+1):
-            #keep record of the loss
-            epoch_loss_avg = tf.keras.metrics.Mean()
-            print('Start of epoch %d' % (epoch,))
-            # Iterate over the batches of the dataset.
-            count = 0
-            for labels, images in train_dataset:
-                ## main step
-                loss = self.train_step(images, labels, training = True)
-                epoch_loss_avg(loss)
-                self.ckpt.step.assign_add(1)
-                # show the loss in every 1000 updates
-                if int(self.ckpt.step) % 1000 == 0:
-                    print("loss {:1.2f}".format(loss.numpy()))                
-
-            with self.__train_summary_writer.as_default():
-                tf.summary.scalar('loss', epoch_loss_avg.result(), step=epoch)
+        
+        with self.__train_summary_writer.as_default():
+            for epoch in range(1, epochs+1):
+                print('Start of epoch %d' % (epoch,))
+                # iterate over the batches of the dataset.
+                for labels, images in train_dataset:
+                    ## main step
+                    loss = self.train_step(images, labels, training = True)
+                    self.ckpt.step.assign_add(1)
+                    # show the loss in every 1000 updates, keep record of the update times
+                    if int(self.ckpt.step) % 1000 == 0:
+                        print("loss {:1.2f}".format(loss.numpy()))
+                        tf.summary.scalar('train_loss', loss.numpy(), step=self.ckpt.step)
                 tf.summary.scalar('optimizer_lr', self.optimizer.lr, step=epoch)
-                
-            acc = self.evaluate_model(val_dataset)
-            with self.__train_summary_writer.as_default():
-                tf.summary.scalar('validation_accuarcy', acc, step=epoch)
-            
-            # save the checkpoint in every epoch
-            save_path = self.manager.save()
-            print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path) + "-- loss {:1.2f}".format(epoch_loss_avg.result()))
+
+                # use validation set to get accuarcy
+                val_psnr, val_loss, ms_ssim = self.evaluate_model(val_dataset)
+                tf.summary.scalar('validation_psnr', val_psnr, step=epoch)
+                tf.summary.scalar('validation_loss', val_loss, step=epoch)
+                tf.summary.scalar('validation_loss', ms_ssim, step=epoch)
+                # save the checkpoint in every epoch
+                save_path = self.manager.save()
+                print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path))
 
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)

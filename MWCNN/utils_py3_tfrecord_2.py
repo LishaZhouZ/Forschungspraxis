@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from PIL import Image
-from msssim import MultiScaleSSIM
 import IPython.display as display
 from config import *
 
@@ -140,17 +139,3 @@ def getBayer(RGB_Image):
     Bayer[0:h:2, 1:w:2] = RGB_Image[0:h:2, 1:w:2, 1]  # G2
     Bayer[1:h:2, 1:w:2] = RGB_Image[1:h:2, 1:w:2, 2]  # B
     return Bayer
-
-
-def MS_SSIM(im1, im2, b=0):
-    im1 = im1[:, b:im1.shape[1]-b, b:im1.shape[2]-b, :]
-    im2 = im2[:, b:im2.shape[1]-b, b:im2.shape[2]-b, :]
-    return MultiScaleSSIM(im1, im2)
-
-
-def SSIM(im1, im2, b=0):
-    im1 = tf.convert_to_tensor(
-        value=im1[:, b:im1.shape[1]-b, b:im1.shape[2]-b, :], dtype=np.float32)
-    im2 = tf.convert_to_tensor(
-        value=im2[:, b:im2.shape[1]-b, b:im2.shape[2]-b, :], dtype=np.float32)
-    return tf.image.ssim(im1, im2, max_val=255)
