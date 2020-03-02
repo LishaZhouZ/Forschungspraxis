@@ -10,7 +10,7 @@ from utils_py3_tfrecord_2 import *
 from config import *
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--stride', dest='stride', type=int, default=100, help='stride')
+parser.add_argument('--stride', dest='stride', type=int, default=25, help='stride')
 parser.add_argument('--step', dest='step', type=int, default=0, help='step, or padding')
 parser.add_argument('--augment', dest='DATA_AUG_TIMES', type=int, default=1, help='data augmentation, used to creat more data')
 # check output arguments
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     generate_patches(src_dir_label, src_dir_input, save_dir, isDebug, tfRecord_name)
 
     #For validation data
-    val_dir_label = Path("./images/test/groundtruth")
-    val_dir_input = Path("./images/test/CompressedQ10")
+    val_dir_label = Path("./images/train/validation/groundtruth")
+    val_dir_input = Path("./images/train/validation/CompressedQ10")
     tfRecord_val_name = 'MWCNN_validation_data.tfrecords'
     generate_patches(val_dir_label, val_dir_input, save_dir, isDebug, tfRecord_val_name)
 
