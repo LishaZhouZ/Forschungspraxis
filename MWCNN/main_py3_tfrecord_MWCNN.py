@@ -29,5 +29,9 @@ if __name__ == '__main__':
         
         train_proces = train_MWCNN(batch_size, patch_size, learning_rate)
         train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
-        train_proces.model.save('./model/model.h5')
-        train_proces.model.save('./model/model', save_format='tf')
+        
+        if not os.path.exists("saved_model"):
+            os.mkdir("saved_model")
+
+        train_proces.model.save('./saved_model/model.h5')
+        train_proces.model.save('./saved_model/model', save_format='tf')

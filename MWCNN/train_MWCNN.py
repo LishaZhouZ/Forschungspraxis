@@ -28,7 +28,7 @@ class train_MWCNN(object):
             self.optimizer = tf.keras.optimizers.MomentumOptimizer(
                 self.__learning_rate, momentum=0.9)
         self.ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=self.optimizer, net=self.model)
-        self.manager = tf.train.CheckpointManager(self.ckpt, './tf_ckpts', max_to_keep=3)
+        self.manager = tf.train.CheckpointManager(self.ckpt, './tf_ckpts')
         self.train_loss_result = []
         self.train_validation_result = []
         self.lr = []
@@ -78,14 +78,15 @@ class train_MWCNN(object):
             epoch_loss_avg = tf.keras.metrics.Mean()
             print('Start of epoch %d' % (epoch,))
             # Iterate over the batches of the dataset.
+            count = 0
             for labels, images in train_dataset:
                 ## main step
                 loss = self.train_step(images, labels, training = True)
                 epoch_loss_avg(loss)
                 self.ckpt.step.assign_add(1)
-                if int(self.ckpt.step) % 100 == 0:
-                    save_path = self.manager.save()
-                    print("Saved checkpoint for step {}: {}".format(int(self.ckpt.step), save_path) + "-- loss {:1.2f}".format(loss.numpy()))
+                # show the loss in every 1000 updates
+                if int(self.ckpt.step) % 1000 == 0:
+                    print("loss {:1.2f}".format(loss.numpy()))                
 
             with self.__train_summary_writer.as_default():
                 tf.summary.scalar('loss', epoch_loss_avg.result(), step=epoch)
@@ -94,6 +95,10 @@ class train_MWCNN(object):
             acc = self.evaluate_model(val_dataset)
             with self.__train_summary_writer.as_default():
                 tf.summary.scalar('validation_accuarcy', acc, step=epoch)
+            
+            # save the checkpoint in every epoch
+            save_path = self.manager.save()
+            print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path) + "-- loss {:1.2f}".format(epoch_loss_avg.result()))
 
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)

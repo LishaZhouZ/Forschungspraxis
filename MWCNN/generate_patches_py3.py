@@ -76,20 +76,21 @@ def generate_patches(dir_label, dir_input, save_dir, isDebug, tfRecord_name):
                         break
     writer.close()
     print("Total patches = %d , batch size = %d, total batches = %d" %(numPatches, batch_size, numPatches / batch_size))
-    print("Training data has been written into TFrecord.")
+    print("Data has been written into TFrecord.")
 
 if __name__ == '__main__': 
     src_dir_label = Path("./images/train/groundtruth")
     src_dir_input = Path("./images/train/CompressedQ10")
     save_dir = './patches'
-    isDebug = False
     tfRecord_name = 'MWCNN_train_data.tfrecords'
-    generate_patches(src_dir_label, src_dir_input, save_dir, isDebug, tfRecord_name)
+    print("Training data will be generated:")
+    generate_patches(src_dir_label, src_dir_input, save_dir, debug_mode, tfRecord_name)
 
     #For validation data
     val_dir_label = Path("./images/train/validation/groundtruth")
     val_dir_input = Path("./images/train/validation/CompressedQ10")
     tfRecord_val_name = 'MWCNN_validation_data.tfrecords'
-    generate_patches(val_dir_label, val_dir_input, save_dir, isDebug, tfRecord_val_name)
+    print("Validation data will be generated:")
+    generate_patches(val_dir_label, val_dir_input, save_dir, debug_mode, tfRecord_val_name)
 
 
