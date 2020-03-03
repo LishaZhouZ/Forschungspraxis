@@ -85,9 +85,9 @@ class train_MWCNN(object):
                     loss = self.train_step(images, labels, training = True)
                     self.ckpt.step.assign_add(1)
                     # show the loss in every 1000 updates, keep record of the update times
-                    if int(self.ckpt.step) % 1000 == 0:
+                    if int(self.ckpt.step) % 10 == 0:
                         print("loss {:1.2f}".format(loss.numpy()))
-                        tf.summary.scalar('train_loss', loss.numpy(), step=self.ckpt.step)
+                        tf.summary.scalar('train_loss', loss.numpy(), step=self.ckpt.step.numpy())
                 tf.summary.scalar('optimizer_lr', self.optimizer.lr, step=epoch)
 
                 # use validation set to get accuarcy

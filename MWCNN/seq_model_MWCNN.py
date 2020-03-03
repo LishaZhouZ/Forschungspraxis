@@ -68,8 +68,8 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
   
   def update_state(self, y_true, y_pred):
     mssim = tf.image.ssim_multiscale(y_pred, y_true, 255)
-    self.ms_ssim.assign_add(mssim)
-    self.count.assign_add(1)
+    self.ms_ssim.assign_add(np.sum(mssim.numpy())) #output is 4x1 array
+    self.count.assign_add(batch_size)
 
   def result(self):
     return self.ms_ssim/self.count
