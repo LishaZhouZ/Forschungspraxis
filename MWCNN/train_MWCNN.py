@@ -48,14 +48,15 @@ class train_MWCNN(object):
         # Training loop
         # Optimize the model
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
-        return total_loss
+        psnr = imcpsnr(output, images)
+        return total_loss, psnr
     
     def evaluate_model(self, val_dataset):
         psnr = PSNRMetric()
         epoch_loss = tf.keras.metrics.Mean()
         ms_ssim = MS_SSIMMetric()
         for label_val, images_val in val_dataset:
-            predict_val = images_val + self.model(images_val, training = False)
+            predict_val = images_val + self.model.predict(images_val)
             # Update val metrics
             loss = self.loss_fn(predict_val, label_val)
             psnr.update_state(label_val, predict_val)
@@ -65,6 +66,8 @@ class train_MWCNN(object):
         val_loss = epoch_loss.result()
         ms_ssim = ms_ssim.result()
         print('Validation psnr: %s' % (float(val_psnr),))
+        print('Validation loss: %s' % (float(val_loss),))
+        print('Validation msssim: %s' % (float(ms_ssim),))
         return val_psnr, val_loss, ms_ssim
 
     def train_and_checkpoint(self, train_dataset, epochs, val_dataset):
