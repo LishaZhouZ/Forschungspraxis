@@ -35,3 +35,4 @@ if __name__ == '__main__':
 
         train_proces.model.save('./saved_model/model.h5')
         train_proces.model.save('./saved_model/model', save_format='tf')
+        print("model have been saved")
