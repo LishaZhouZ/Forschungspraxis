@@ -11,10 +11,8 @@ class train_MWCNN(object):
         super(train_MWCNN, self).__init__()
         self.__batch_size = batch_size
         self.__patch_size = patch_size
-        self.__train_summary_writer = tf.summary.create_file_writer(
+        self.__summary_writer = tf.summary.create_file_writer(
             './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'/train')
-        self.__test_summary_writer = tf.summary.create_file_writer(
-            './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'/test')
         self.__learning_rate = learning_rate
         self.model = build_model()
         if optimizer == 'Adam':
@@ -76,28 +74,33 @@ class train_MWCNN(object):
         else:
             print("Initializing from scratch.")
         
-        with self.__train_summary_writer.as_default():
-            for epoch in range(1, epochs+1):
-                print('Start of epoch %d' % (epoch,))
-                # iterate over the batches of the dataset.
-                for labels, images in train_dataset:
-                    ## main step
-                    loss = self.train_step(images, labels, training = True)
-                    self.ckpt.step.assign_add(1)
-                    # show the loss in every 1000 updates, keep record of the update times
-                    if int(self.ckpt.step) % 1000 == 0:
-                        print("loss {:1.2f}".format(loss.numpy()))
+        
+        for epoch in range(1, epochs+1):
+            print('Start of epoch %d' % (epoch,))
+            # iterate over the batches of the dataset.
+            for labels, images in train_dataset:
+                ## main step
+                loss = self.train_step(images, labels, training = True)
+                self.ckpt.step.assign_add(1)
+                # show the loss in every 1000 updates, keep record of the update times
+                if int(self.ckpt.step) % 1000 == 0:
+                    print("loss {:1.2f}".format(loss.numpy()))
+                    with self.__summary_writer.as_default():
                         tf.summary.scalar('train_loss', loss.numpy(), step=self.ckpt.step)
+            
+            self.__summary_writer.flush()
+            with self.__summary_writer.as_default():
                 tf.summary.scalar('optimizer_lr', self.optimizer.lr, step=epoch)
-
                 # use validation set to get accuarcy
                 val_psnr, val_loss, ms_ssim = self.evaluate_model(val_dataset)
                 tf.summary.scalar('validation_psnr', val_psnr, step=epoch)
                 tf.summary.scalar('validation_loss', val_loss, step=epoch)
                 tf.summary.scalar('validation_loss', ms_ssim, step=epoch)
-                # save the checkpoint in every epoch
-                save_path = self.manager.save()
-                print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path))
+            
+            self.__summary_writer.flush()
+            # save the checkpoint in every epoch
+            save_path = self.manager.save()
+            print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path))
 
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
