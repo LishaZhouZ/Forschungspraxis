@@ -7,12 +7,12 @@ from config import *
 import datetime
 
 class train_MWCNN(object):
-    def __init__(self, batch_size, patch_size, learning_rate, optimizer='Adam', name='MWCNN'):
+    def __init__(self, batch_size, patch_size, optimizer='Adam', name='MWCNN'):
         super(train_MWCNN, self).__init__()
         self.__batch_size = batch_size
         self.__patch_size = patch_size
         self.__summary_writer = tf.summary.create_file_writer(
-            './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'/train')
+            './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
         self.model = build_model()
         if optimizer == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(
@@ -48,23 +48,30 @@ class train_MWCNN(object):
         # Optimize the model
         self.optimizer.learning_rate = decay_step_size
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
-        psnr = imcpsnr(output, images)
-        return total_loss, psnr
+        psnr1 = imcpsnr(output, labels) 
+        psnr2 = imcpsnr(images, labels)
+        return total_loss, psnr1, psnr2
     
     def evaluate_model(self, val_dataset):
         psnr = PSNRMetric()
         epoch_loss = tf.keras.metrics.Mean()
         ms_ssim = MS_SSIMMetric()
+        org_psnr = PSNRMetric()
         for label_val, images_val in val_dataset:
             predict_val = images_val + self.model.predict(images_val)
             # Update val metrics
             loss = self.loss_fn(predict_val, label_val)
+
+            org_psnr.update_state(label_val, images_val)
             psnr.update_state(label_val, predict_val)
-            epoch_loss(loss)
+            epoch_loss.update_state(loss)
             ms_ssim.update_state(label_val, predict_val)
         val_psnr = psnr.result()
         val_loss = epoch_loss.result()
         ms_ssim = ms_ssim.result()
+        org_psnr = org_psnr.result()
+
+        print('Original psnr: %s' % (float(org_psnr),))
         print('Validation psnr: %s' % (float(val_psnr),))
         print('Validation loss: %s' % (float(val_loss),))
         print('Validation msssim: %s' % (float(ms_ssim),))
@@ -74,37 +81,52 @@ class train_MWCNN(object):
         self.ckpt.restore(self.manager.latest_checkpoint)
         if self.manager.latest_checkpoint:
             print("Restored from {}".format(self.manager.latest_checkpoint))
+            start_epoch = self.ckpt.save_counter.numpy()+1
         else:
             print("Initializing from scratch.")
-        
-        
-        for epoch in range(1, epochs+1):
+            start_epoch = 1
+        avg_tr_psnr = tf.keras.metrics.Mean()
+        avg_org_psnr = tf.keras.metrics.Mean()
+        avg_loss = tf.keras.metrics.Mean()
+
+        for epoch in range(start_epoch, epochs+1):
             print('Start of epoch %d' % (epoch,))
             # iterate over the batches of the dataset.
             for labels, images in train_dataset:
                 self.ckpt.step.assign_add(1)
                 ## main step
                 #decay step size is an interface parameter
-                if self.ckpt.step.numpy()%
-                train_loss, train_psnr = self.train_step(images, labels, training = True, decay_step_size=0.01)
+                train_loss, psnr_tr, psnr_org = self.train_step(images, labels, training = True, decay_step_size = decay_lr[epoch])
                 
+                avg_loss.update_state(train_loss)
+                avg_tr_psnr.update_state(psnr_tr)
+                avg_org_psnr.update_state(psnr_org)
+
                 # show the loss in every 1000 updates, keep record of the update times
-                if int(self.ckpt.step) % 10 == 0:
-                    print("Step " + str(self.ckpt.step.numpy()) + " loss {:1.2f}".format(train_loss.numpy()) + " psnr {:1.2f}".format(train_psnr))
+                if int(self.ckpt.step.numpy()) % record_step == 0:
+                    avg_relative_psnr = avg_tr_psnr.result() - avg_org_psnr.result()
+                    print("Step " + str(self.ckpt.step.numpy()) + " loss {:1.2f},".format(avg_loss.result()) 
+                                                                + " train_psnr {:1.5f},".format(avg_tr_psnr.result())
+                                                                + " org_psnr {:1.5f},".format(avg_org_psnr.result())
+                                                                + " gain {:1.5f}".format(avg_relative_psnr))
                     with self.__summary_writer.as_default():
-                        tf.summary.scalar('train_loss', train_loss.numpy(), step=self.ckpt.step.numpy())
-                        tf.summary.scalar('train_psnr', train_psnr, step=self.ckpt.step.numpy())
+                        tf.summary.scalar('train_loss', avg_loss.result(), step=self.ckpt.step.numpy())
+                        tf.summary.scalar('train_psnr', avg_tr_psnr.result(), step=self.ckpt.step.numpy())
+                        tf.summary.scalar('original_psnr', avg_org_psnr.result(), step=self.ckpt.step.numpy())
+                        tf.summary.scalar('relative_psnr', avg_relative_psnr, step=self.ckpt.step.numpy())
+                    
+                    avg_loss.reset_states()
+                    avg_tr_psnr.reset_states()
+                    avg_org_psnr.reset_states()
             
-            self.__summary_writer.flush()
             with self.__summary_writer.as_default():
-                tf.summary.scalar('optimizer_lr_t', self.optimizer.lr_t, step=epoch)
+                tf.summary.scalar('optimizer_lr_t', self.optimizer.learning_rate, step=epoch)
                 # use validation set to get accuarcy 
                 val_psnr, val_loss, ms_ssim = self.evaluate_model(val_dataset)
                 tf.summary.scalar('validation_psnr', val_psnr, step=epoch)
                 tf.summary.scalar('validation_loss', val_loss, step=epoch)
                 tf.summary.scalar('validation_msssim', ms_ssim, step=epoch)
             
-            self.__summary_writer.flush()
             # save the checkpoint in every epoch
             save_path = self.manager.save()
             print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path))
@@ -115,8 +137,7 @@ if __name__ == "__main__":
         './patches/MWCNN_train_data.tfrecords', batch_size)
     val_dataset = read_and_decode(
         './patches/MWCNN_validation_data.tfrecords', batch_size)
-    train_proces = train_MWCNN(batch_size, patch_size, learning_rate=0.01)
-    epochs = 1
+    train_proces = train_MWCNN(batch_size, patch_size)
     train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
     
 
