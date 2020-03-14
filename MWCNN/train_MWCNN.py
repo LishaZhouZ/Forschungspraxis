@@ -85,14 +85,15 @@ class train_MWCNN(object):
                 self.ckpt.step.assign_add(1)
                 ## main step
                 #decay step size is an interface parameter
+                if self.ckpt.step.numpy()%
                 train_loss, train_psnr = self.train_step(images, labels, training = True, decay_step_size=0.01)
                 
                 # show the loss in every 1000 updates, keep record of the update times
-                if int(self.ckpt.step) % 1000 == 0:
-                    print("loss {:1.2f}".format(train_loss.numpy()))
+                if int(self.ckpt.step) % 10 == 0:
+                    print("Step " + str(self.ckpt.step.numpy()) + " loss {:1.2f}".format(train_loss.numpy()) + " psnr {:1.2f}".format(train_psnr))
                     with self.__summary_writer.as_default():
-                        tf.summary.scalar('train_loss', train_loss.numpy(), step=self.ckpt.step)
-                        tf.summary.scalar('train_psnr', train_psnr, step=self.ckpt.step)
+                        tf.summary.scalar('train_loss', train_loss.numpy(), step=self.ckpt.step.numpy())
+                        tf.summary.scalar('train_psnr', train_psnr, step=self.ckpt.step.numpy())
             
             self.__summary_writer.flush()
             with self.__summary_writer.as_default():
@@ -101,7 +102,7 @@ class train_MWCNN(object):
                 val_psnr, val_loss, ms_ssim = self.evaluate_model(val_dataset)
                 tf.summary.scalar('validation_psnr', val_psnr, step=epoch)
                 tf.summary.scalar('validation_loss', val_loss, step=epoch)
-                tf.summary.scalar('validation_loss', ms_ssim, step=epoch)
+                tf.summary.scalar('validation_msssim', ms_ssim, step=epoch)
             
             self.__summary_writer.flush()
             # save the checkpoint in every epoch

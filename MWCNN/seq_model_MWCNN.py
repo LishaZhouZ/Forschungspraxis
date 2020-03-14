@@ -82,7 +82,7 @@ def build_model():
   # 1.
   model.add(WaveletConvLayer())
   
-  for i in range(4): 
+  for i in range(3): 
     model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
       kernel_initializer=my_initial, kernel_regularizer=my_regular))
     model.add(layers.BatchNormalization())
@@ -98,7 +98,7 @@ def build_model():
   
   #3.
   model.add(WaveletConvLayer())
-  for i in range(4): 
+  for i in range(7): 
     model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
       kernel_initializer=my_initial, kernel_regularizer=my_regular))
     model.add(layers.BatchNormalization())
