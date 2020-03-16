@@ -53,8 +53,8 @@ class PSNRMetric(tf.keras.metrics.Metric):
     self.count = self.add_weight(name='count', initializer='zeros')
   
   def update_state(self, y_true, y_pred):
-    mse = imcpsnr(y_true, y_pred)
-    self.psnr.assign_add(mse)
+    psnr1 = imcpsnr(y_true, y_pred, peak=255)
+    self.psnr.assign_add(psnr1)
     self.count.assign_add(1)
 
   def result(self):

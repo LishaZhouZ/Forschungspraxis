@@ -22,10 +22,10 @@ if __name__ == '__main__':
         for device in gpu_devices:
             tf.config.experimental.set_memory_growth(device, True)
 
-        train_dataset = read_and_decode(
-            './patches/MWCNN_train_data.tfrecords', batch_size)
-        val_dataset = read_and_decode(
-            './patches/MWCNN_validation_data.tfrecords', batch_size)
+        train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
+        train_dataset = train_dataset.batch(batch_size)
+        val_dataset = read_and_decode('./patches/MWCNN_validation_data.tfrecords')
+        val_dataset = val_dataset.batch(batch_size)
         
         train_proces = train_MWCNN(batch_size, patch_size)
         train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)

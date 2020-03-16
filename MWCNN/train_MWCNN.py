@@ -35,7 +35,7 @@ class train_MWCNN(object):
         total_loss = tf.add_n([lossRGB] + reg_losses)
         return total_loss
 
-    #for one batch
+#for one batch
     @tf.function
     def train_step(self, images, labels, training, decay_step_size):
         #converted = wavelet_conversion(images)
@@ -75,7 +75,7 @@ class train_MWCNN(object):
         print('Validation psnr: %s' % (float(val_psnr),))
         print('Validation loss: %s' % (float(val_loss),))
         print('Validation msssim: %s' % (float(ms_ssim),))
-        return val_psnr, val_loss, ms_ssim
+        return val_psnr, val_loss, ms_ssim, org_psnr
 
     def train_and_checkpoint(self, train_dataset, epochs, val_dataset):
         self.ckpt.restore(self.manager.latest_checkpoint)
@@ -90,6 +90,8 @@ class train_MWCNN(object):
         avg_loss = tf.keras.metrics.Mean()
 
         for epoch in range(start_epoch, epochs+1):
+            train_dataset = train_dataset.shuffle(100000)
+            
             print('Start of epoch %d' % (epoch,))
             # iterate over the batches of the dataset.
             for labels, images in train_dataset:
@@ -113,7 +115,7 @@ class train_MWCNN(object):
                         tf.summary.scalar('train_loss', avg_loss.result(), step=self.ckpt.step.numpy())
                         tf.summary.scalar('train_psnr', avg_tr_psnr.result(), step=self.ckpt.step.numpy())
                         tf.summary.scalar('original_psnr', avg_org_psnr.result(), step=self.ckpt.step.numpy())
-                        tf.summary.scalar('relative_psnr', avg_relative_psnr, step=self.ckpt.step.numpy())
+                        tf.summary.scalar('relative_tr_psnr', avg_relative_psnr, step=self.ckpt.step.numpy())
                     
                     avg_loss.reset_states()
                     avg_tr_psnr.reset_states()
@@ -122,7 +124,10 @@ class train_MWCNN(object):
             with self.__summary_writer.as_default():
                 tf.summary.scalar('optimizer_lr_t', self.optimizer.learning_rate, step=epoch)
                 # use validation set to get accuarcy 
-                val_psnr, val_loss, ms_ssim = self.evaluate_model(val_dataset)
+                val_psnr, val_loss, ms_ssim, org_psnr = self.evaluate_model(val_dataset)
+                gain = val_psnr - org_psnr
+                print('Relative psnr: %s' % (float(val_psnr - org_psnr),))
+                tf.summary.scalar('relative_val_psnr', gain, step=epoch)
                 tf.summary.scalar('validation_psnr', val_psnr, step=epoch)
                 tf.summary.scalar('validation_loss', val_loss, step=epoch)
                 tf.summary.scalar('validation_msssim', ms_ssim, step=epoch)
@@ -134,9 +139,12 @@ class train_MWCNN(object):
 if __name__ == "__main__":
     tf.config.experimental_run_functions_eagerly(True)
     train_dataset = read_and_decode(
-        './patches/MWCNN_train_data.tfrecords', batch_size)
+        './patches/MWCNN_train_data.tfrecords')
+    train_dataset = train_dataset.batch(batch_size)
     val_dataset = read_and_decode(
-        './patches/MWCNN_validation_data.tfrecords', batch_size)
+        './patches/MWCNN_validation_data.tfrecords')
+    val_dataset = val_dataset.batch(batch_size)
+
     train_proces = train_MWCNN(batch_size, patch_size)
     train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
     

@@ -40,7 +40,8 @@ def show_batch(image_batch, label_batch):
 
 
 if __name__ == '__main__':
-    train_dataset = read_and_decode('./patches/MWCNN_train_data_debug.tfrecords', 2, 192)
+    train_dataset = read_and_decode('./patches/MWCNN_train_data_debug.tfrecords')
+    train_dataset = train_dataset.batch(batch_size)
     img_batch, label_batch = next(iter(train_dataset))
     print(img_batch)
     for image, label in train_dataset.take(1):
