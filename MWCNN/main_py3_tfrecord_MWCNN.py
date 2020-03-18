@@ -19,10 +19,13 @@ if __name__ == '__main__':
     print(tf.executing_eagerly())
     if use_gpu:
         print("GPU\n") 
-        gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-        print("Num GPUs Available: ", len(gpu_devices))
-        for device in gpu_devices:
-            tf.config.experimental.set_memory_growth(device, True)
+        physical_devices = tf.config.list_physical_devices('GPU') 
+        try: 
+            tf.config.experimental.set_memory_growth(physical_devices[0], True) 
+            assert tf.config.experimental.get_memory_growth(physical_devices[0]) 
+        except: 
+            # Invalid device or cannot modify virtual devices once initialized. 
+            pass 
 
         train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
         train_dataset = train_dataset.batch(batch_size)
