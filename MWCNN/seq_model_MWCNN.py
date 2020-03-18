@@ -74,7 +74,7 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
   def result(self):
     return self.ms_ssim/self.count
 
-def build_model():
+def build_MWCNN():
   my_initial = tf.initializers.he_normal()
   my_regular = tf.keras.regularizers.l2(l=0.0001)
   kernel_size = (3,3)

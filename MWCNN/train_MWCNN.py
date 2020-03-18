@@ -13,7 +13,7 @@ class train_MWCNN(object):
         self.__patch_size = patch_size
         self.__summary_writer = tf.summary.create_file_writer(
             './logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-        self.model = build_model()
+        self.model = build_MWCNN()
         if optimizer == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(
                 learning_rate=0.01, epsilon=1e-8, name='AdamOptimizer')
@@ -35,7 +35,7 @@ class train_MWCNN(object):
         total_loss = tf.add_n([lossRGB] + reg_losses)
         return total_loss
 
-#for one batch
+    #for one batch
     @tf.function
     def train_step(self, images, labels, training, decay_step_size):
         #converted = wavelet_conversion(images)
@@ -82,6 +82,7 @@ class train_MWCNN(object):
         if self.manager.latest_checkpoint:
             print("Restored from {}".format(self.manager.latest_checkpoint))
             start_epoch = self.ckpt.save_counter.numpy()+1
+            
         else:
             print("Initializing from scratch.")
             start_epoch = 1
@@ -126,7 +127,7 @@ class train_MWCNN(object):
                 # use validation set to get accuarcy 
                 val_psnr, val_loss, ms_ssim, org_psnr = self.evaluate_model(val_dataset)
                 gain = val_psnr - org_psnr
-                print('Relative psnr: %s' % (float(val_psnr - org_psnr),))
+                print('Relative psnr: %s' % (float(gain),))
                 tf.summary.scalar('relative_val_psnr', gain, step=epoch)
                 tf.summary.scalar('validation_psnr', val_psnr, step=epoch)
                 tf.summary.scalar('validation_loss', val_loss, step=epoch)

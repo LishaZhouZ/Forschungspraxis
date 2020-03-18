@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 checkpoint_directory = './tf_ckpts'
 
 def restore_and_test_with_path(dir_label, dir_input):
-    model = build_model()
+    model = build_MWCNN()
     filepaths_label = sorted(dir_label.glob('*'))
     filepaths_input = sorted(dir_input.glob('*'))
     
@@ -25,7 +25,7 @@ def restore_and_test_with_path(dir_label, dir_input):
 
 
 def restore_and_test_with_tfrecord(test_dataset):
-    model = build_model()
+    model = build_MWCNN()
     optimizer = tf.keras.optimizers.Adam(
                 learning_rate=0.001, epsilon=1e-8, name='AdamOptimizer')
     
