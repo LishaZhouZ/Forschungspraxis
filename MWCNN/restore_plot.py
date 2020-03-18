@@ -39,7 +39,7 @@ def restore_and_test_with_tfrecord(test_dataset):
     org_psnr = PSNRMetric()
 
     for label_val, images_val in test_dataset:
-        output = model.predict(images_val)
+        output = models(images_val)
         predict_val = images_val + output
         #plt.imshow(predict_val[1,:,:,:]/255)
         #plt.show()

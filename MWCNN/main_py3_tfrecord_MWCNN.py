@@ -14,7 +14,9 @@ from config import *
 
 if __name__ == '__main__':
     use_gpu = True
-    tf.config.experimental_run_functions_eagerly(True)
+    #tf.config.experimental_run_functions_eagerly(True)
+    print("check")
+    print(tf.executing_eagerly())
     if use_gpu:
         print("GPU\n") 
         gpu_devices = tf.config.experimental.list_physical_devices('GPU')

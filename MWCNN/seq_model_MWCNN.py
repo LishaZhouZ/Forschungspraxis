@@ -53,7 +53,7 @@ class PSNRMetric(tf.keras.metrics.Metric):
     self.count = self.add_weight(name='count', initializer='zeros')
   
   def update_state(self, y_true, y_pred):
-    psnr1 = imcpsnr(y_true, y_pred, peak=255)
+    psnr1 = tf_psnr(y_true, y_pred)
     self.psnr.assign_add(psnr1)
     self.count.assign_add(1)
 
@@ -73,6 +73,14 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
 
   def result(self):
     return self.ms_ssim/self.count
+
+def loss_fn(model, prediction, groundtruth):
+  #inv_converted = wavelet_inverse_conversion(prediction)
+  lossRGB = (1.0 /batch_size / patch_size / patch_size) * tf.nn.l2_loss(prediction - groundtruth)
+  #regularization loss
+  reg_losses = tf.math.add_n(model.losses)
+  total_loss = lossRGB + reg_losses
+  return total_loss
 
 def build_MWCNN():
   my_initial = tf.initializers.he_normal()

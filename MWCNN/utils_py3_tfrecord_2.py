@@ -103,8 +103,8 @@ def cal_psnr(im1, im2):
 
 
 def tf_psnr(im1, im2):
-    mse = tf.compat.v1.losses.mean_squared_error(im2, im1)
-    return 10.0 * (tf.math.log(255.0 ** 2 / mse) / tf.math.log(10.0))
+    psnr = tf.image.psnr(im1, im2, 255)
+    return tf.math.reduce_mean(psnr)
 
 
 def imcpsnr(im1, im2, peak=255, b=0):

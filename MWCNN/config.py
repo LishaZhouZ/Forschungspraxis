@@ -2,7 +2,7 @@ import numpy as np
 
 debug_mode = False
 channel = 3
-batch_size = 16
+batch_size = 24
 patch_size = 256
 epochs = 40
 record_step = 10

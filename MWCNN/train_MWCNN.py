@@ -27,14 +27,7 @@ class train_MWCNN(object):
         self.manager = tf.train.CheckpointManager(self.ckpt, './tf_ckpts', max_to_keep=None)
 
 
-    def loss_fn(self, prediction, groundtruth):
-        #inv_converted = wavelet_inverse_conversion(prediction)
-        lossRGB = (1.0 /self.__batch_size / self.__patch_size / self.__patch_size) * tf.nn.l2_loss(prediction - groundtruth)
-        #regularization loss
-        reg_losses = self.model.losses
-        total_loss = tf.add_n([lossRGB] + reg_losses)
-        return total_loss
-
+    
     #for one batch
     @tf.function
     def train_step(self, images, labels, training, decay_step_size):
@@ -42,14 +35,14 @@ class train_MWCNN(object):
         with tf.GradientTape() as tape:
             reconstructed = self.model(images, training = training)
             output = images + reconstructed
-            total_loss = self.loss_fn(output, labels)
+            total_loss = loss_fn(self.model, output, labels)
         grads = tape.gradient(total_loss, self.model.trainable_weights)
         # Training loop
         # Optimize the model
         self.optimizer.learning_rate = decay_step_size
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
-        psnr1 = imcpsnr(output, labels) 
-        psnr2 = imcpsnr(images, labels)
+        psnr1 = tf_psnr(output, labels) 
+        psnr2 = tf_psnr(images, labels)
         return total_loss, psnr1, psnr2
     
     def evaluate_model(self, val_dataset):
@@ -58,9 +51,9 @@ class train_MWCNN(object):
         ms_ssim = MS_SSIMMetric()
         org_psnr = PSNRMetric()
         for label_val, images_val in val_dataset:
-            predict_val = images_val + self.model.predict(images_val)
+            predict_val = images_val + self.model(images_val)
             # Update val metrics
-            loss = self.loss_fn(predict_val, label_val)
+            loss = loss_fn(self.model, predict_val, label_val)
 
             org_psnr.update_state(label_val, images_val)
             psnr.update_state(label_val, predict_val)
