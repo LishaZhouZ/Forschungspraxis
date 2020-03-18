@@ -91,7 +91,7 @@ class train_MWCNN(object):
         avg_loss = tf.keras.metrics.Mean()
 
         for epoch in range(start_epoch, epochs+1):
-            train_dataset = train_dataset.shuffle(10000)
+            train_dataset = train_dataset.shuffle(2000)
             
             print('Start of epoch %d' % (epoch,))
             # iterate over the batches of the dataset.
