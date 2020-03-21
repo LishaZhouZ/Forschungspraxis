@@ -13,31 +13,43 @@ from config import *
 
 
 if __name__ == '__main__':
-    use_gpu = True
-    #tf.config.experimental_run_functions_eagerly(True)
-    print("check")
     print(tf.executing_eagerly())
-    if use_gpu:
-        print("GPU\n") 
-        physical_devices = tf.config.list_physical_devices('GPU') 
-        try: 
-            tf.config.experimental.set_memory_growth(physical_devices[0], True) 
-            assert tf.config.experimental.get_memory_growth(physical_devices[0]) 
-        except: 
-            # Invalid device or cannot modify virtual devices once initialized. 
-            pass 
+    physical_devices = tf.config.experimental.list_physical_devices('GPU') 
+    try: 
+        tf.config.experimental.set_memory_growth(physical_devices[0], True) 
+        assert tf.config.experimental.get_memory_growth(physical_devices[0]) 
+    except: 
+        # Invalid device or cannot modify virtual devices once initialized. 
+        pass
 
-        train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
-        train_dataset = train_dataset.batch(batch_size)
-        val_dataset = read_and_decode('./patches/MWCNN_validation_data.tfrecords')
-        val_dataset = val_dataset.batch(batch_size)
-        
-        train_proces = train_MWCNN(batch_size, patch_size)
-        train_proces.train_and_checkpoint(train_dataset, epochs, val_dataset)
-        
-        if not os.path.exists("saved_model"):
-            os.mkdir("saved_model")
+    #read dataset
+    train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
+    val_dataset = read_and_decode('./patches/MWCNN_validation_data.tfrecords')
+    #build model
+    model = build_MWCNN()
+    #set up optimizer
+    optimizer = tf.optimizers.Adam(learning_rate=0.01, epsilon=1e-8, name='AdamOptimizer')
 
-        train_proces.model.save('./saved_model/model.h5')
-        train_proces.model.save('./saved_model/model', save_format='tf')
-        print("model have been saved")
+    writer = tf.summary.create_file_writer('./logs/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer = optimizer, net = model)
+    manager = tf.train.CheckpointManager(ckpt, checkpoint_directory, max_to_keep=None)
+
+    #checkpoint restortion
+    ckpt.restore(manager.latest_checkpoint)
+    if manager.latest_checkpoint:
+        print("Restored from {}".format(manager.latest_checkpoint))
+        start_epoch = ckpt.save_counter.numpy() + 1
+    else:
+        print("Initializing from scratch.")
+        start_epoch = 1
+
+    for epoch in range(start_epoch, epochs+1):
+        print('Start of epoch %d' % (epoch,))
+        optimizer.learning_rate = decay_lr[epoch]
+        train_one_epoch(model, train_dataset, optimizer, writer, ckpt)
+        evaluate_model(model, val_dataset, writer, epoch)
+        # save the checkpoint in every epoch
+        save_path = manager.save()
+        print("Saved checkpoint for epoch {}: {}".format(int(epoch), save_path))
+
+    print("Training saved")

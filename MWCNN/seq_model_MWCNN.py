@@ -53,7 +53,7 @@ class PSNRMetric(tf.keras.metrics.Metric):
     self.count = self.add_weight(name='count', initializer='zeros')
   
   def update_state(self, y_true, y_pred):
-    psnr1 = tf_psnr(y_true, y_pred)
+    psnr1 = tf.reduce_mean( tf.image.psnr(y_true, y_pred, max_val=255))
     self.psnr.assign_add(psnr1)
     self.count.assign_add(1)
 
@@ -67,12 +67,13 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
     self.count = self.add_weight(name='count', initializer='zeros')
   
   def update_state(self, y_true, y_pred):
-    mssim = tf.image.ssim_multiscale(y_pred, y_true, 255)
-    self.ms_ssim.assign_add(np.sum(mssim.numpy())) #output is 4x1 array
-    self.count.assign_add(batch_size)
+    mssim = tf.reduce_mean( tf.image.ssim_multiscale(y_pred, y_true, 255))
+    self.ms_ssim.assign_add(mssim) #output is 4x1 array
+    self.count.assign_add(1)
 
   def result(self):
     return self.ms_ssim/self.count
+
 
 def loss_fn(model, prediction, groundtruth):
   #inv_converted = wavelet_inverse_conversion(prediction)

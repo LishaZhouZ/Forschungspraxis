@@ -46,30 +46,29 @@ def extract_fn(data_record):
             'img_label': tf.io.FixedLenFeature(shape=(), dtype=tf.string),
             'img_bayer': tf.io.FixedLenFeature(shape=(), dtype=tf.string),
         })
-    img_input_de = tf.io.decode_raw(features['img_bayer'], tf.uint8)
-    img_input = tf.reshape(img_input_de, [patch_size, patch_size, 3])
-    img_input = tf.cast(img_input, tf.float32)
+    features['img_bayer'] = tf.io.decode_raw(features['img_bayer'], tf.uint8)
+    features['img_bayer'] = tf.reshape(features['img_bayer'], [patch_size, patch_size, 3])
+    features['img_bayer'] = tf.cast(features['img_bayer'], tf.float32)
 
-    img_label_de = tf.io.decode_raw(features['img_label'], tf.uint8)
-    img_label = tf.reshape(img_label_de, [patch_size, patch_size, 3])
-    img_label = tf.cast(img_label, tf.float32)
-
-    return img_label, img_input
+    features['img_label'] = tf.io.decode_raw(features['img_label'], tf.uint8)
+    features['img_label'] = tf.reshape(features['img_label'], [patch_size, patch_size, 3])
+    features['img_label'] = tf.cast(features['img_label'], tf.float32)
+    return features['img_bayer'], features['img_label']
 
 
 def read_and_decode(filename):
     #arg_patch_size = tf.constant(patch_size, dtype=tf.int64)
     # read from file path
     raw_image_dataset = tf.data.TFRecordDataset(filename)
+
     # extract the data from raw image
-    extracted_dataset = raw_image_dataset.map(extract_fn)
-    # shuffle
-    #if batch_size == None:
-     #   return extracted_dataset
-    #else:
-    #    extracted_dataset = extracted_dataset.shuffle(1000 + 3 * batch_size)
-    #    extracted_dataset = extracted_dataset.batch(batch_size)
-    return extracted_dataset
+    #200 batch size 8 -- 101M RAM
+    #100 batch sizz 8 -- 64M RAM
+    raw_image_dataset = raw_image_dataset.shuffle(200)
+    # order is important
+    raw_image_dataset = raw_image_dataset.map(extract_fn)
+    raw_image_dataset = raw_image_dataset.batch(batch_size)
+    return raw_image_dataset
 
 
 def load_images(filelist):

@@ -2,7 +2,7 @@ import numpy as np
 
 debug_mode = False
 channel = 3
-batch_size = 12
+batch_size = 8
 patch_size = 256
 epochs = 40
 record_step = 10
@@ -13,8 +13,10 @@ decay_lr[int(epochs/4):int(epochs/2)] = alpha/2
 decay_lr[int(epochs/2):int(epochs*3/4)] = alpha/5
 decay_lr[int(epochs*3/4):epochs+1] = alpha/10
 
-if debug_mode == True:
-    batch_size = 4
+checkpoint_directory = './tf_ckpts'
 
-#model config
-filter_num = 64
+if debug_mode == True:
+    batch_size = 8
+    epochs = 1
+    record_step = 10
+
