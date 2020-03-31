@@ -38,7 +38,7 @@ def train_one_epoch(model, dataset, optimizer, writer, ckpt):
             #for record
             with writer.as_default():
                 tf.summary.scalar('optimizer_lr_t', optimizer.learning_rate, step = step)
-                tf.summary.scalar('train_loss', total_loss, step = step)
+                tf.summary.scalar('train_loss', avg_loss.result(), step = step)
                 tf.summary.scalar('train_psnr', opt_psnr.result(), step = step)
                 tf.summary.scalar('original_psnr', org_psnr.result(), step = step)
                 tf.summary.scalar('relative_tr_psnr', avg_relative_psnr, step = step)

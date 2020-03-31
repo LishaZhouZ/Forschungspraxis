@@ -11,3 +11,5 @@ tf_ckpts/*
 env/*
 saved_model/*
 patches/*
+tf_ckpts--*/
+events*
