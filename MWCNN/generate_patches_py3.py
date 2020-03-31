@@ -10,7 +10,7 @@ from utils_py3_tfrecord_2 import *
 from config import *
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--stride', dest='stride', type=int, default=25, help='stride')
+parser.add_argument('--stride', dest='stride', type=int, default=40, help='stride')
 parser.add_argument('--step', dest='step', type=int, default=0, help='step, or padding')
 parser.add_argument('--augment', dest='DATA_AUG_TIMES', type=int, default=1, help='data augmentation, used to creat more data')
 # check output arguments
