@@ -12,11 +12,13 @@ def grad(model, images, labels, optimizer):
     with tf.GradientTape() as tape:
         output = model(images, training = True)
         reconstructed = images + output
-        total_loss = loss_fn(model, reconstructed, labels)
+        loss_RGB = loss_fn(reconstructed, labels)
+        reg_losses = tf.math.add_n(model.losses)
+        total_loss = loss_RGB + reg_losses
     grads = tape.gradient(total_loss, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
-    return total_loss, reconstructed
+    return loss_RGB, reg_losses, total_loss, reconstructed
 
 
 def train_one_epoch(model, dataset, optimizer, writer, ckpt):
@@ -24,7 +26,7 @@ def train_one_epoch(model, dataset, optimizer, writer, ckpt):
     opt_psnr = PSNRMetric()
     avg_loss = tf.keras.metrics.Mean()
     for images, labels in dataset:
-        total_loss, reconstructed = grad(model, images, labels, optimizer)
+        loss_RGB, reg_losses, total_loss, reconstructed = grad(model, images, labels, optimizer)
         org_psnr(images, labels)
         opt_psnr(reconstructed, labels)
         avg_loss(total_loss)
@@ -39,6 +41,8 @@ def train_one_epoch(model, dataset, optimizer, writer, ckpt):
             with writer.as_default():
                 tf.summary.scalar('optimizer_lr_t', optimizer.learning_rate, step = step)
                 tf.summary.scalar('train_loss', avg_loss.result(), step = step)
+                tf.summary.scalar('lossRGB', loss_RGB, step = step)
+                tf.summary.scalar('reg_loss', reg_losses, step = step)
                 tf.summary.scalar('train_psnr', opt_psnr.result(), step = step)
                 tf.summary.scalar('original_psnr', org_psnr.result(), step = step)
                 tf.summary.scalar('relative_tr_psnr', avg_relative_psnr, step = step)
