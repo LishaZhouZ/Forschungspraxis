@@ -64,11 +64,13 @@ def evaluate_model(model, val_dataset, writer, epoch):
         output = model(images_val)
         predict_val = images_val + output 
         # Update val metrics
-        loss = loss_fn(model, predict_val, label_val)
+        loss_RGB = loss_fn(predict_val, label_val)
+        reg_losses = tf.math.add_n(model.losses)
+        total_loss = loss_RGB + reg_losses
         #record the things
         org_psnr.update_state(label_val, images_val)
         psnr.update_state(label_val, predict_val)
-        epoch_loss.update_state(loss)
+        epoch_loss.update_state(total_loss)
         ms_ssim.update_state(label_val, predict_val)
     
     val_psnr = psnr.result()
