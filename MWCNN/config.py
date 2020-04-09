@@ -13,7 +13,7 @@ decay_lr[10:20] = alpha/2
 decay_lr[20:30] = alpha/5
 decay_lr[30:40] = alpha/10
 decay_lr[40:50] = alpha/20
-decay_lr[50:60] = alpha/50
+decay_lr[50:epochs+1] = alpha/50
 
 checkpoint_directory = './tf_ckpts'
 
