@@ -79,8 +79,8 @@ def loss_fn(model, prediction, groundtruth):
   #inv_converted = wavelet_inverse_conversion(prediction)
   lossRGB = (1.0 /batch_size / patch_size / patch_size) * tf.nn.l2_loss(prediction - groundtruth)
   #regularization loss
-  reg_losses = tf.math.add_n(model.losses)
-  total_loss = lossRGB + reg_losses
+  #reg_losses = tf.math.add_n(model.losses)
+  total_loss = lossRGB #+ reg_losses
   return total_loss
 
 def build_MWCNN():
