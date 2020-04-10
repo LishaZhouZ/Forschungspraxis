@@ -68,14 +68,14 @@ if __name__ == "__main__":
     img_s_label = np.array(img_label, dtype="float32")
     img_s_input = np.array(img_input, dtype="float32")
     
-    img_s_label = img_s_label[0:256,0:256,0:3]
-    img_s_input = img_s_input[0:256,0:256,0:3]
+    img_s_label = tf.image.rgb_to_grayscale(img_s_label[0:256,0:256,0:3])
+    img_s_input = tf.image.rgb_to_grayscale(img_s_input[0:256,0:256,0:3])
 
     img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
     
     model = build_MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200401/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200410/tf_ckpts')).expect_partial()
     output = model.predict(img_s_input_batch)
     reconstructed = img_s_input_batch + output
 
@@ -83,6 +83,15 @@ if __name__ == "__main__":
 
     print(tf.image.psnr(img_s_label, img_s_input, 255))
     print(tf.image.psnr(reconstructed, img_s_label, 255))
+
+    # show RGB one channel
+    # for images, labels in train_dataset.take(1):
+    #     images = tf.image.grayscale_to_rgb(images[0,:,:,:])
+    #     temp = np.zeros(images.shape, dtype='uint8')
+    #     temp[:,:,0] = images[:,:,0]
+    #     plt.imshow(temp)
+    #     plt.show()
+
 
     # f = plt.figure()
     
