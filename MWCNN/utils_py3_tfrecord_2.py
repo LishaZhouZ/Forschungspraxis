@@ -49,10 +49,12 @@ def extract_fn(data_record):
     features['img_bayer'] = tf.io.decode_raw(features['img_bayer'], tf.uint8)
     features['img_bayer'] = tf.reshape(features['img_bayer'], [patch_size, patch_size, 3])
     features['img_bayer'] = tf.cast(features['img_bayer'], tf.float32)
+    features['img_bayer'] = tf.image.rgb_to_grayscale(features['img_bayer'])
 
     features['img_label'] = tf.io.decode_raw(features['img_label'], tf.uint8)
     features['img_label'] = tf.reshape(features['img_label'], [patch_size, patch_size, 3])
     features['img_label'] = tf.cast(features['img_label'], tf.float32)
+    features['img_label'] = tf.image.rgb_to_grayscale(features['img_label'])
     return features['img_bayer'], features['img_label']
 
 

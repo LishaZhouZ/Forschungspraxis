@@ -127,7 +127,7 @@ def build_MWCNN():
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
   
-  model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
+  model.add(layers.Conv2D(4*channel, kernel_size, padding = 'SAME',
               kernel_initializer=my_initial ,kernel_regularizer=my_regular))#
   model.add(WaveletInvLayer())
   model.build((None, patch_size, patch_size, channel))
