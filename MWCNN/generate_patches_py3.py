@@ -21,7 +21,7 @@ def generate_patches(dir_label, dir_input, save_dir, isDebug, tfRecord_name):
     filepaths_input = sorted(dir_input.glob('*'))
 
     if isDebug:
-        numDebug = 30
+        numDebug = 300
         filepaths_label = filepaths_label[:numDebug] # take only ten images to quickly debug
         filepaths_input = filepaths_input[:numDebug]
     print("number of training images %d" % len(filepaths_label))
