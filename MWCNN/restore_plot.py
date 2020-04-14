@@ -75,14 +75,14 @@ if __name__ == "__main__":
     
     model = build_MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200410/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200413/tf_ckpts')).expect_partial()
     output = model.predict(img_s_input_batch)
     reconstructed = img_s_input_batch + output
 
-    reconstructed_s = np.squeeze(reconstructed)
+    reconstructed_s = np.squeeze(reconstructed, axis=0)
 
     print(tf.image.psnr(img_s_label, img_s_input, 255))
-    print(tf.image.psnr(reconstructed, img_s_label, 255))
+    print(tf.image.psnr(reconstructed_s, img_s_label, 255))
 
     # show RGB one channel
     # for images, labels in train_dataset.take(1):
