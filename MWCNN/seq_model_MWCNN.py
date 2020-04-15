@@ -77,7 +77,7 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
 
 def loss_fn(prediction, groundtruth):
   #inv_converted = wavelet_inverse_conversion(prediction)
-  lossRGB = (1.0 /batch_size / patch_size / patch_size) * tf.nn.l2_loss(prediction - groundtruth)
+  lossRGB = (1/3)*tf.nn.l2_loss(prediction - groundtruth)
   #regularization loss
   return lossRGB
 

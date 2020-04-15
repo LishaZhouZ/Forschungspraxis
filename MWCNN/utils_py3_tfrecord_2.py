@@ -80,6 +80,7 @@ def save_images(filepath, ground_truth, noisy_image=None, clean_image=None):
     else:
         cat_image = np.concatenate(
             [ground_truth, noisy_image, clean_image], axis=1)
-    im = Image.fromarray(cat_image.astype('uint8'))
+    im = np.around(np.clip(cat_image, 0, 255)).astype('uint8')
+    im = Image.fromarray(im)
     im.save(filepath)
 
