@@ -13,3 +13,4 @@ saved_model/*
 patches/*
 tf_ckpts--*/
 events*
+ckpt*
