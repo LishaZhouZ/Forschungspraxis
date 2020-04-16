@@ -1,12 +1,12 @@
 import numpy as np
 
-debug_mode = False
+debug_mode = True
 channel = 1
 batch_size = 24
 patch_size = 256
 epochs = 70
 record_step = 1
-alpha = 0.001
+alpha = 0.005
 decay_lr = np.ones(epochs+1)
 decay_lr[0:10]= alpha
 decay_lr[10:20] = alpha/2
