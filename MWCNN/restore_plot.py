@@ -53,10 +53,15 @@ def feature_visualization(model, img):
     # show the figure
     plt.show()
 
+def TrainingSetTF():
+    train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
+    img_input,img_label = next(iter(train_dataset))
+    img_s_input = img_input[1,:,:,:]
+    img_s_label = img_label[1,:,:,:]
 
+    return img_s_input, img_s_label
 
-if __name__ == "__main__":
-    number = 25
+def ImageFromPath(number):
     #image_cutting(Path('./images/test/live1_groundtruth'), Path('./images/test/live1_qp10'))
     #filepaths_label = sorted(Path('./images/test/split_label').glob('*'))
     #filepaths_input = sorted(Path('./images/test/split_input').glob('*'))
@@ -70,12 +75,17 @@ if __name__ == "__main__":
     
     img_s_label = tf.image.rgb_to_grayscale(img_s_label[0:256,0:256,0:3])
     img_s_input = tf.image.rgb_to_grayscale(img_s_input[0:256,0:256,0:3])
+    return img_s_input,img_s_label
 
+if __name__ == "__main__":
+    number = 30
+    #img_s_input, img_s_label = ImageFromPath(25)
+    img_s_input, img_s_label = TrainingSetTF()
     img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
     
     model = build_MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200413/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/tf_ckpts_gray10dB_noclip')).expect_partial()
     output = model.predict(img_s_input_batch)
     reconstructed = img_s_input_batch + output
 
