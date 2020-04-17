@@ -53,10 +53,15 @@ def feature_visualization(model, img):
     # show the figure
     plt.show()
 
+def TrainingSetTF():
+    train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
+    img_input,img_label = next(iter(train_dataset))
+    img_s_input = img_input[1,:,:,:]
+    img_s_label = img_label[1,:,:,:]
 
+    return img_s_input, img_s_label
 
-if __name__ == "__main__":
-    number = 25
+def ImageFromPath(number):
     #image_cutting(Path('./images/test/live1_groundtruth'), Path('./images/test/live1_qp10'))
     #filepaths_label = sorted(Path('./images/test/split_label').glob('*'))
     #filepaths_input = sorted(Path('./images/test/split_input').glob('*'))
@@ -68,21 +73,33 @@ if __name__ == "__main__":
     img_s_label = np.array(img_label, dtype="float32")
     img_s_input = np.array(img_input, dtype="float32")
     
-    img_s_label = img_s_label[0:256,0:256,0:3]
-    img_s_input = img_s_input[0:256,0:256,0:3]
+    return img_s_input,img_s_label
 
+if __name__ == "__main__":
+    number = 30
+    #img_s_input, img_s_label = ImageFromPath(25)
+    img_s_input, img_s_label = TrainingSetTF()
     img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
     
     model = build_MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200401/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/tf_ckpts')).expect_partial()
     output = model.predict(img_s_input_batch)
     reconstructed = img_s_input_batch + output
 
-    reconstructed_s = np.squeeze(reconstructed)
+    reconstructed_s = np.squeeze(reconstructed, axis=0)
 
     print(tf.image.psnr(img_s_label, img_s_input, 255))
-    print(tf.image.psnr(reconstructed, img_s_label, 255))
+    print(tf.image.psnr(reconstructed_s, img_s_label, 255))
+
+    # show RGB one channel
+    # for images, labels in train_dataset.take(1):
+    #     images = tf.image.grayscale_to_rgb(images[0,:,:,:])
+    #     temp = np.zeros(images.shape, dtype='uint8')
+    #     temp[:,:,0] = images[:,:,0]
+    #     plt.imshow(temp)
+    #     plt.show()
+
 
     # f = plt.figure()
     
