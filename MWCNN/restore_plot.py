@@ -76,14 +76,14 @@ def ImageFromPath(number):
     return img_s_input,img_s_label
 
 if __name__ == "__main__":
-    number = 30
+    number = 40
     #img_s_input, img_s_label = ImageFromPath(25)
     img_s_input, img_s_label = TrainingSetTF()
     img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
     
     model = build_MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200421/tf_ckpts')).expect_partial()
     output = model.predict(img_s_input_batch)
     reconstructed = img_s_input_batch + output
 
