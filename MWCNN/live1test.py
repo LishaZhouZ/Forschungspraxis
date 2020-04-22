@@ -28,20 +28,23 @@ if __name__ == "__main__":
         img_label = Image.open(filepaths_label[i])
         img_input = Image.open(filepaths_input[i])
         
-        img_s_label = np.array(img_label, dtype="float32")
-        img_s_input = np.array(img_input, dtype="float32")
+        img_s_label = tf.convert_to_tensor(np.array(img_label, dtype="float32"))
+        img_s_input = tf.convert_to_tensor(np.array(img_input, dtype="float32"))
         
 
-        img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
-
+        img_s_input_batch = tf.expand_dims(img_s_input, axis = 0)
+        img_s_label_batch = tf.expand_dims(img_s_label, axis = 0)
         output = model.predict(img_s_input_batch)
 
         reconstructed = img_s_input_batch + output
-        reconstructed_s = np.squeeze(reconstructed, axis=0)
 
-        org_psnr[i] = tf.image.psnr(img_s_label, img_s_input, 255).numpy()
-        rec_psnr[i] = tf.image.psnr(reconstructed_s, img_s_label, 255).numpy()
-        print('Image ' + str(i) + ' org_psnr:%.4f,' % org_psnr[i] + 'after_psnr:%.4f' % rec_psnr[i])
+        org_psnr[i] = tf.image.psnr(img_s_label_batch, img_s_input_batch, 255.0).numpy()
+        rec_psnr[i] = tf.image.psnr(reconstructed, img_s_label_batch, 255.0).numpy()
+        org_ssim[i] = tf.image.ssim(img_s_label_batch, img_s_input_batch, 255.0)
+        rec_ssim[i] = tf.image.ssim(reconstructed, img_s_label_batch, 255.0)
+        print('Image ' + str(i) + ' org_psnr:%.4f,' % org_psnr[i] + 'after_psnr:%.4f,' % rec_psnr[i], ' org_ssim:%.4f,' % org_ssim[i] + 'after_ssim:%.4f' % rec_ssim[i])
     
     print('average org_psnr:%.4f' % np.mean(org_psnr))
     print('average after_psnr:%.4f' % np.mean(rec_psnr))
+    print('average org_ssim:%.4f' % np.mean(org_ssim))
+    print('average after_ssim:%.4f' % np.mean(rec_ssim))
