@@ -53,7 +53,7 @@ class PSNRMetric(tf.keras.metrics.Metric):
     self.count = self.add_weight(name='count', initializer='zeros')
   
   def update_state(self, y_true, y_pred):
-    psnr1 = tf.reduce_mean( tf.image.psnr(y_true, y_pred, max_val=255))
+    psnr1 = tf.reduce_mean(tf.image.psnr(y_true, y_pred, max_val=255.0))
     self.psnr.assign_add(psnr1)
     self.count.assign_add(1)
 
@@ -67,7 +67,7 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
     self.count = self.add_weight(name='count', initializer='zeros')
   
   def update_state(self, y_true, y_pred):
-    mssim = tf.reduce_mean( tf.image.ssim_multiscale(y_pred, y_true, 255))
+    mssim = tf.reduce_mean( tf.image.ssim_multiscale(y_pred, y_true, 255.0))
     self.ms_ssim.assign_add(mssim) #output is 4x1 array
     self.count.assign_add(1)
 
@@ -77,9 +77,111 @@ class MS_SSIMMetric(tf.keras.metrics.Metric):
 
 def loss_fn(prediction, groundtruth):
   #inv_converted = wavelet_inverse_conversion(prediction)
-  lossRGB = (1/3)*tf.nn.l2_loss(prediction - groundtruth)
+  frobenius_norm = tf.norm(prediction-groundtruth, ord='fro', axis=(1, 2))
+  lossRGB = (1/2)*(tf.reduce_mean(frobenius_norm)**2)
   #regularization loss
   return lossRGB
+
+class ConvConcatLayer(layers.Layer):
+  def __init__(self, feature_num, kernel_size, my_initial, my_regular):
+    super(ConvConcatLayer, self).__init__()
+    self.conv = layers.Conv2D(feature_num, kernel_size, padding = 'SAME',
+        kernel_initializer=my_initial,kernel_regularizer=my_regular)# 
+    self.bn = layers.BatchNormalization()
+    self.relu = layers.ReLU()
+  
+  def call(self, inputs):
+    a = self.conv(inputs)
+    b = self.bn(a)
+    c = self.relu(b)
+    return c
+
+class ConvBlock(layers.Layer):
+  def __init__(self, feature_num, kernel_size, my_initial, my_regular):
+    super(ConvBlock, self).__init__()
+    self.alpha1 = ConvConcatLayer(feature_num, kernel_size, my_initial, my_regular)
+    self.alpha2 = ConvConcatLayer(feature_num, kernel_size, my_initial, my_regular)
+    self.alpha3 = ConvConcatLayer(feature_num, kernel_size, my_initial, my_regular)
+    self.alpha4 = ConvConcatLayer(feature_num, kernel_size, my_initial, my_regular)
+  
+  def call(self, inputs):
+    a11 = self.alpha1(inputs)
+    a12 = self.alpha2(a11)
+    a13 = self.alpha3(a12)
+    a14 = self.alpha4(a13)
+    return a14
+
+class ConvInvBlock(layers.Layer):
+  def __init__(self, feature_num1, kernel_size, my_initial, my_regular):
+    super(ConvInvBlock, self).__init__()
+    self.alpha1 = ConvConcatLayer(feature_num1, kernel_size, my_initial, my_regular)
+    self.alpha2 = ConvConcatLayer(feature_num1, kernel_size, my_initial, my_regular)
+    self.alpha3 = ConvConcatLayer(feature_num1, kernel_size, my_initial, my_regular)
+  
+  def call(self, inputs):
+    a11 = self.alpha1(inputs)
+    a12 = self.alpha2(a11)
+    a13 = self.alpha3(a12)
+    return a13
+
+class MWCNN(tf.keras.Model):
+  def __init__(self):
+    super(MWCNN, self).__init__()
+    self.my_initial = tf.initializers.he_normal()
+    self.my_regular = tf.keras.regularizers.l2(l=0.0001)
+    
+    self.convblock1 = ConvBlock(160, (3,3), self.my_initial, self.my_regular)
+    self.convblock2 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
+    self.convblock3 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
+
+    self.invblock2 = ConvInvBlock(256, (3,3), self.my_initial, self.my_regular)
+    self.invblock1 = ConvInvBlock(160, (3,3), self.my_initial, self.my_regular)
+    
+    self.wavelet1 = WaveletConvLayer()
+    self.wavelet2 = WaveletConvLayer()
+    self.wavelet3 = WaveletConvLayer()
+    
+    self.invwavelet1 = WaveletInvLayer()
+    self.invwavelet2 = WaveletInvLayer()
+    self.invwavelet3 = WaveletInvLayer()
+
+    self.convlayer1024 = layers.Conv2D(1024, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+    self.convlayer640 = layers.Conv2D(640, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial,kernel_regularizer = self.my_regular)
+    self.convlayer12 = layers.Conv2D(12, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+  
+  def call(self, inputs):
+    #former side
+    wav1 = self.wavelet1(inputs)  #3-12
+    con1 = self.convblock1(wav1)  #12-160
+    
+    #2
+    wav2 = self.wavelet2(con1)   #160-640
+    con2 = self.convblock2(wav2) #640-256
+
+    #3
+    wav3 = self.wavelet3(con2)   #256-1024
+    con3 = self.convblock3(wav3)  #1024-256
+    invcon3_expand = self.convlayer1024(con3) #256-1024
+
+    invwav3 = self.invwavelet3(invcon3_expand)  #1024-256
+    
+    #2
+    invcon2 = self.invblock2(invwav3 + con2) #256
+    invcon2_expand = self.convlayer640(invcon2)#640
+    invwav2 = self.invwavelet2(invcon2_expand) #160
+
+    #1
+    invcon1 =self.invblock1(invwav2 + con1) #160
+    invcon1_retified = self.convlayer12(invcon1)#12
+    output = self.invwavelet1(invcon1_retified) #3
+
+    return output
+    
+
+    
 
 def build_MWCNN():
   my_initial = tf.initializers.he_normal()
@@ -131,4 +233,5 @@ def build_MWCNN():
               kernel_initializer=my_initial ,kernel_regularizer=my_regular))#
   model.add(WaveletInvLayer())
   model.build((None, patch_size, patch_size, channel))
+
   return model

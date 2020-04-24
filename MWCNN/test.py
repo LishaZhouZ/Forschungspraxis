@@ -23,7 +23,7 @@ def test():
     print(tf.executing_eagerly())
     optimizer = keras.optimizers.Adam(lr=1e-3)
 
-    model = build_MWCNN()
+    model = MWCNN()
 
     optimizer = tf.optimizers.Adam(learning_rate=0.01, epsilon=1e-8, name='AdamOptimizer')
     

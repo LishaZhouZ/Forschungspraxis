@@ -81,7 +81,7 @@ if __name__ == "__main__":
     img_s_input, img_s_label = TrainingSetTF()
     img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
     
-    model = build_MWCNN()
+    model = MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
     ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200421/tf_ckpts')).expect_partial()
     output = model.predict(img_s_input_batch)
