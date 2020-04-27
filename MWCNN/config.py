@@ -1,9 +1,9 @@
 import numpy as np
 
-debug_mode = True
+debug_mode = False
 channel = 3
-batch_size = 24
-patch_size = 256
+batch_size = 8
+patch_size = 440
 epochs = 40
 record_step = 1
 alpha = 0.001
