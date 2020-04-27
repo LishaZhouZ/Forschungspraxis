@@ -7,7 +7,7 @@ from config import *
 import datetime
 
 #for gradient computation
-@tf.function
+#@tf.function
 def grad(model, images, labels, optimizer):
     with tf.GradientTape() as tape:
         output = model(images, training = True)
