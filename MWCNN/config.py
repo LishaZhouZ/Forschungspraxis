@@ -1,6 +1,6 @@
 import numpy as np
 
-debug_mode = False
+debug_mode = True
 channel = 3
 batch_size = 24
 patch_size = 256
