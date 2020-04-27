@@ -10,7 +10,7 @@ import datetime
 @tf.function
 def grad(model, images, labels, optimizer):
     with tf.GradientTape() as tape:
-        output = model(images, training = True)
+        output = model(images)
         reconstructed = images + output
         #reconstructed = tf.clip_by_value(images + output, clip_value_min=0., clip_value_max=255.)
         loss_RGB = loss_fn(reconstructed, labels)
@@ -62,7 +62,7 @@ def evaluate_model(model, val_dataset, writer, epoch):
     org_psnr = PSNRMetric()
     
     for images_val, label_val in val_dataset:
-        output = model(images_val)
+        output = model.predict(images_val)
         predict_val = images_val + output 
         # Update val metrics
         loss_RGB = loss_fn(predict_val, label_val)

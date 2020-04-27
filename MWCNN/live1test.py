@@ -17,7 +17,7 @@ if __name__ == "__main__":
     count = 0
     model = MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Downloads/Training20200421/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Downloads/Training20200427/tf_ckpts')).expect_partial()
 
     org_psnr = np.zeros(len(filepaths_label))
     rec_psnr = np.zeros(len(filepaths_label))
@@ -46,7 +46,9 @@ if __name__ == "__main__":
 
         img_s_input_batch = tf.expand_dims(img_s_input_padded, axis = 0)
         img_s_label_batch = tf.expand_dims(img_s_label, axis = 0)
+
         output = model.predict(img_s_input_batch)
+        
         reconstructed = img_s_input_batch + output
 
         output_cut = tf.slice(reconstructed, [0, padding_up, padding_left, 0], [1, shape_input[0], shape_input[1], 3])
