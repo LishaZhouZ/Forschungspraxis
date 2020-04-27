@@ -10,7 +10,7 @@ import datetime
 #@tf.function
 def grad(model, images, labels, optimizer):
     with tf.GradientTape() as tape:
-        output = model(images)
+        output = model(images, training = True)
         reconstructed = images + output
         #reconstructed = tf.clip_by_value(images + output, clip_value_min=0., clip_value_max=255.)
         loss_RGB = loss_fn(reconstructed, labels)
