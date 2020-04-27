@@ -179,9 +179,9 @@ class MWCNN(tf.keras.Model):
     #1
     invcon1 =self.invblock1(invwav2 + con1) #160
     invcon1_retified = self.convlayer12(invcon1)#12
-    invwav3 = self.invwavelet1(invcon1_retified) #3
+    invwav1 = self.invwavelet1(invcon1_retified) #3
     
-    output = tf.nn.depth_to_space(invwav3, 2, data_format='NHWC', name=None)
+    output = tf.nn.depth_to_space(invwav1, 2, data_format='NHWC', name=None)
     return output
     
 
