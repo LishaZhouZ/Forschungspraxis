@@ -53,4 +53,22 @@ def test():
         #        tf.summary.scalar('train_loss', total_loss, step = count.numpy())
             print("Step " + str(step) + " loss {:1.2f}".format(total_loss))
 
-test()
+
+
+if __name__ == '__main__':
+    print(tf.executing_eagerly())
+    physical_devices = tf.config.experimental.list_physical_devices('GPU') 
+    try: 
+        tf.config.experimental.set_memory_growth(physical_devices[0], True) 
+        assert tf.config.experimental.get_memory_growth(physical_devices[0]) 
+    except: 
+        # Invalid device or cannot modify virtual devices once initialized. 
+        pass
+
+    model =tf.keras.Sequential()
+    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    model.summary()
