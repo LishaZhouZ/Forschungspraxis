@@ -78,19 +78,19 @@ def ImageFromPath(number):
 if __name__ == "__main__":
     number = 40
     #img_s_input, img_s_label = ImageFromPath(25)
-    img_s_input, img_s_label = TrainingSetTF()
-    img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
+    #img_s_input, img_s_label = TrainingSetTF()
+    #img_s_input_batch = np.expand_dims(img_s_input, axis = 0)
     
-    model = MWCNN()
-    ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200421/tf_ckpts')).expect_partial()
-    output = model.predict(img_s_input_batch)
-    reconstructed = img_s_input_batch + output
+    #model = MWCNN()
+    #ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
+    #ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Forschungspraxis/logs/Training20200421/tf_ckpts')).expect_partial()
+    #output = model.predict(img_s_input_batch)
+    #reconstructed = img_s_input_batch + output
 
-    reconstructed_s = np.squeeze(reconstructed, axis=0)
+    #reconstructed_s = np.squeeze(reconstructed, axis=0)
 
-    print(tf.image.psnr(img_s_label, img_s_input, 255))
-    print(tf.image.psnr(reconstructed_s, img_s_label, 255))
+    #print(tf.image.psnr(img_s_label, img_s_input, 255))
+    #print(tf.image.psnr(reconstructed_s, img_s_label, 255))
 
     # show RGB one channel
     # for images, labels in train_dataset.take(1):
@@ -120,4 +120,4 @@ if __name__ == "__main__":
 
     # plt.subplots_adjust(left=None, bottom=None, right=None, top=None, hspace=None, wspace = .001)
     # plt.show()
-    save_images(Path('/home/lisha/Forschungspraxis/images/test/outcome/' + str(number) + '.bmp'), img_s_label, noisy_image = img_s_input, clean_image = reconstructed_s)
+    #save_images(Path('/home/lisha/Forschungspraxis/images/test/outcome/' + str(number) + '.bmp'), img_s_label, noisy_image = img_s_input, clean_image = reconstructed_s)

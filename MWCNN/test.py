@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 #from train_MWCNN import *
 from seq_model_MWCNN import *
+from pathlib import Path
 
 
 @tf.function
@@ -66,9 +67,48 @@ if __name__ == '__main__':
         pass
 
     model =tf.keras.Sequential()
-    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-    model.summary()
+    model.add(WaveletConvLayer())
+    #model.add()
+    #model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    #model.add(layers.MaxPooling2D((2, 2)))
+    #model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    #model.summary()
+
+    path = Path('/home/lisha/Forschungspraxis/images/test/test/groundtruth_5/lenna.bmp')
+    
+    img_label = Image.open(path)
+    fraction = np.array(img_label, dtype="float32")
+    a=fraction[:,:,2]
+    a=np.expand_dims(a, axis=2)
+    img_label_s = np.expand_dims(a, axis=0)
+    output = model(img_label_s)
+    
+    # print(img_label_s-output)
+    # d=np.zeros((512,512,3), dtype='uint8')
+    # d = np.array(output[0,:,:,0:3]).astype('uint8')
+    # plt.imshow(d)
+    # plt.show()
+    #temp = np.zeros((256,256,3), dtype='uint8')
+    
+
+    a=np.zeros((256,256,3), dtype='uint8')
+    a[:,:,2] =np.clip(output[0,:,:,0], 0, 255)
+    b=np.zeros((256,256,3), dtype='uint8')
+    b[:,:,2] = output[0,:,:,1]
+    c=np.zeros((256,256,3), dtype='uint8')
+    c[:,:,2] = output[0,:,:,2]
+    d=np.zeros((256,256,3), dtype='uint8')
+    d[:,:,2] =  output[0,:,:,3]
+    con_row1= np.concatenate(
+            [a, b], axis=1)
+    con_row2 =np.concatenate(
+            [c, d], axis=1)
+    con2 = np.concatenate(
+            [con_row1, con_row2], axis=0) 
+
+    plt.imshow(con2)
+    plt.axis('off')
+
+    
+
+    plt.show()
