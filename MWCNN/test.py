@@ -69,6 +69,7 @@ if __name__ == '__main__':
     model =tf.keras.Sequential()
     model.add(WaveletConvLayer())
 
+
     #model.add()
     #model.add(layers.Conv2D(64, (3, 3), activation='relu'))
     #model.add(layers.MaxPooling2D((2, 2)))
@@ -94,20 +95,20 @@ if __name__ == '__main__':
 
     a=np.zeros((256,256,3), dtype='uint8')
     a[:,:,0] =np.clip(output[0,:,:,0], 0, 255)
-    a[:,:,1] =np.clip(output[0,:,:,1], 0, 255)
-    a[:,:,2] =np.clip(output[0,:,:,2], 0, 255)
+    #a[:,:,1] =np.clip(output[0,:,:,1], 0, 255)
+    #a[:,:,2] =np.clip(output[0,:,:,2], 0, 255)
     b=np.zeros((256,256,3), dtype='uint8')
     b[:,:,0] =output[0,:,:,3]
-    b[:,:,1] =output[0,:,:,4]
-    b[:,:,2] =output[0,:,:,5]
+    #b[:,:,1] =output[0,:,:,4]
+    #b[:,:,2] =output[0,:,:,5]
     c=np.zeros((256,256,3), dtype='uint8')
     c[:,:,0] = output[0,:,:,6]
-    c[:,:,1] = output[0,:,:,7]
-    c[:,:,2] = output[0,:,:,8]
+    #c[:,:,1] = output[0,:,:,7]
+    #c[:,:,2] = output[0,:,:,8]
     d=np.zeros((256,256,3), dtype='uint8')
     d[:,:,0] =  output[0,:,:,9]
-    d[:,:,1] =  output[0,:,:,10]
-    d[:,:,2] =  output[0,:,:,11]
+    #d[:,:,1] =  output[0,:,:,10]
+    #d[:,:,2] =  output[0,:,:,11]
     con_row1= np.concatenate(
             [a, b], axis=1)
     con_row2 =np.concatenate(

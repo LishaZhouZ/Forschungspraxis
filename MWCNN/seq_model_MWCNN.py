@@ -18,8 +18,8 @@ class WaveletConvLayer(tf.keras.layers.Layer):
     im_c4 = inputs[:, 1::2, 1::2, :] # right right
 
     LL = im_c1 + im_c2 + im_c3 + im_c4
-    LH = -im_c1 - im_c2 + im_c3 + im_c4
-    HL = -im_c1 + im_c2 - im_c3 + im_c4
+    LH = -im_c1 + im_c2 - im_c3 + im_c4
+    HL = -im_c1 - im_c2 + im_c3 + im_c4
     HH = im_c1 - im_c2 - im_c3 + im_c4
     result = tf.concat([LL, LH, HL, HH], 3) #(None, 96,96,12)    
     return result
@@ -38,8 +38,8 @@ class WaveletInvLayer(tf.keras.layers.Layer):
     HH = inputs[:, :, :, 3*a:]
     
     aa = LL - LH - HL + HH
-    bb = LL - LH + HL - HH
-    cc = LL + LH - HL - HH
+    bb = LL + LH - HL - HH
+    cc = LL - LH + HL - HH
     dd = LL + LH + HL + HH
     concated = tf.concat([aa, bb, cc, dd], 3)
     reconstructed = tf.nn.depth_to_space(concated, 2)
@@ -184,7 +184,63 @@ class MWCNN(tf.keras.Model):
     output = tf.nn.depth_to_space(invwav1, 2, data_format='NHWC', name=None)
     return output
     
+class MWCNN_other(tf.keras.Model):
+  def __init__(self):
+    super(MWCNN, self).__init__()
+    self.my_initial = tf.initializers.he_normal()
+    self.my_regular = tf.keras.regularizers.l2(l=0.0001)
+    
+    self.convblock1 = ConvBlock(160, (3,3), self.my_initial, self.my_regular)
+    self.convblock2 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
+    self.convblock3 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
 
+    self.invblock2 = ConvInvBlock(256, (3,3), self.my_initial, self.my_regular)
+    self.invblock1 = ConvInvBlock(160, (3,3), self.my_initial, self.my_regular)
+    
+    self.wavelet1 = WaveletConvLayer()
+    self.wavelet2 = WaveletConvLayer()
+    self.wavelet3 = WaveletConvLayer()
+    
+    self.invwavelet1 = WaveletInvLayer()
+    self.invwavelet2 = WaveletInvLayer()
+    self.invwavelet3 = WaveletInvLayer()
+
+    self.convlayer1024 = layers.Conv2D(1024, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+    self.convlayer640 = layers.Conv2D(640, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial,kernel_regularizer = self.my_regular)
+    self.convlayer12 = layers.Conv2D(48, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+  
+  def call(self, inputs):
+
+    #former side
+    wav1 = self.wavelet1(inputs)  #
+    con1 = self.convblock1(wav1)  #12-160
+    
+    #2
+    wav2 = self.wavelet2(con1)   #160-640
+    con2 = self.convblock2(wav2) #640-256
+
+    #3
+    wav3 = self.wavelet3(con2)   #256-1024
+    con3 = self.convblock3(wav3)  #1024-256
+    invcon3_expand = self.convlayer1024(con3) #256-1024
+
+    invwav3 = self.invwavelet3(invcon3_expand)  #1024-256
+    
+    #2
+    invcon2 = self.invblock2(invwav3 + con2) #256
+    invcon2_expand = self.convlayer640(invcon2)#640
+    invwav2 = self.invwavelet2(invcon2_expand) #160
+
+    #1
+    invcon1 =self.invblock1(invwav2 + con1) #160
+    invcon1_retified = self.convlayer12(invcon1)#12
+    invwav1 = self.invwavelet1(invcon1_retified) #3
+    
+    output = tf.nn.depth_to_space(invwav1, 2, data_format='NHWC', name=None)
+    return output
     
 
 def build_MWCNN():
