@@ -68,6 +68,7 @@ if __name__ == '__main__':
 
     model =tf.keras.Sequential()
     model.add(WaveletConvLayer())
+
     #model.add()
     #model.add(layers.Conv2D(64, (3, 3), activation='relu'))
     #model.add(layers.MaxPooling2D((2, 2)))
