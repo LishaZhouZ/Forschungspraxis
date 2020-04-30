@@ -76,7 +76,7 @@ def evaluate_model(model, val_dataset, writer, epoch):
     org_psnr = PSNRMetric()
     
     for images_val, label_val in val_dataset:
-        output = model.predict(images_val)
+        output = model(images_val, training = False)
         predict_val = images_val + output 
         # Update val metrics
         loss_RGB = loss_fn(predict_val, label_val)
