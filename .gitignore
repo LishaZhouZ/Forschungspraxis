@@ -4,13 +4,12 @@ logs/*
 .vscode/*
 __pycache__/*
 venv/*
-MWCNN/patches/*
 MWCNN/.vscode/*
 MWCNN/__pycache__/*
 tf_ckpts/*
 env/*
 saved_model/*
-patches/*
+
 tf_ckpts--*/
 events*
 ckpt*
