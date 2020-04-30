@@ -23,8 +23,8 @@ if __name__ == '__main__':
         pass
 
     #read dataset
-    train_dataset = read_and_decode('./patches/MWCNN_train_data_debug.tfrecords')
-    val_dataset = read_and_decode('./patches/MWCNN_validation_data_debug.tfrecords')
+    train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
+    val_dataset = read_and_decode('./patches/MWCNN_validation_data.tfrecords')
     #build model
     model = MWCNN_other()
 
