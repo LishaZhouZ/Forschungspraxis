@@ -18,8 +18,8 @@ class WaveletConvLayer(tf.keras.layers.Layer):
     im_c4 = inputs[:, 1::2, 1::2, :] # right right
 
     LL = im_c1 + im_c2 + im_c3 + im_c4
-    LH = -im_c1 + im_c2 - im_c3 + im_c4
-    HL = -im_c1 - im_c2 + im_c3 + im_c4
+    LH = -im_c1 - im_c2 + im_c3 + im_c4
+    HL = -im_c1 + im_c2 - im_c3 + im_c4
     HH = im_c1 - im_c2 - im_c3 + im_c4
     result = tf.concat([LL, LH, HL, HH], 3) #(None, 96,96,12)    
     return result
@@ -38,8 +38,8 @@ class WaveletInvLayer(tf.keras.layers.Layer):
     HH = inputs[:, :, :, 3*a:]
     
     aa = LL - LH - HL + HH
-    bb = LL + LH - HL - HH
-    cc = LL - LH + HL - HH
+    bb = LL - LH + HL - HH
+    cc = LL + LH - HL - HH
     dd = LL + LH + HL + HH
     concated = tf.concat([aa, bb, cc, dd], 3)
     reconstructed = tf.nn.depth_to_space(concated, 2)
@@ -186,16 +186,17 @@ class MWCNN(tf.keras.Model):
     
 class MWCNN_other(tf.keras.Model):
   def __init__(self):
-    super(MWCNN, self).__init__()
+    super(MWCNN_other, self).__init__()
     self.my_initial = tf.initializers.he_normal()
     self.my_regular = tf.keras.regularizers.l2(l=0.0001)
-    
-    self.convblock1 = ConvBlock(160, (3,3), self.my_initial, self.my_regular)
-    self.convblock2 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
-    self.convblock3 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
 
-    self.invblock2 = ConvInvBlock(256, (3,3), self.my_initial, self.my_regular)
-    self.invblock1 = ConvInvBlock(160, (3,3), self.my_initial, self.my_regular)
+    self.convblock1_LL = ConvBlock(120, (3,3), self.my_initial, self.my_regular)
+    self.convblock1 = ConvBlock(120, (3,3), self.my_initial, self.my_regular)
+    self.convblock2 = ConvBlock(192, (3,3), self.my_initial, self.my_regular)
+    self.convblock3 = ConvBlock(192, (3,3), self.my_initial, self.my_regular)
+
+    self.invblock2 = ConvInvBlock(192, (3,3), self.my_initial, self.my_regular)
+    self.invblock1 = ConvInvBlock(120, (3,3), self.my_initial, self.my_regular)
     
     self.wavelet1 = WaveletConvLayer()
     self.wavelet2 = WaveletConvLayer()
@@ -205,93 +206,52 @@ class MWCNN_other(tf.keras.Model):
     self.invwavelet2 = WaveletInvLayer()
     self.invwavelet3 = WaveletInvLayer()
 
-    self.convlayer1024 = layers.Conv2D(1024, (3,3), padding = 'SAME',
+    self.convlayer512 = layers.Conv2D(768, (3,3), padding = 'SAME',
         kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
-    self.convlayer640 = layers.Conv2D(640, (3,3), padding = 'SAME',
+    self.convlayer320 = layers.Conv2D(480, (3,3), padding = 'SAME',
         kernel_initializer = self.my_initial,kernel_regularizer = self.my_regular)
-    self.convlayer12 = layers.Conv2D(48, (3,3), padding = 'SAME',
+    self.convlayer8 = layers.Conv2D(8, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+    self.convlayer4 = layers.Conv2D(4, (3,3), padding = 'SAME',
         kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
   
   def call(self, inputs):
 
-    #former side
     wav1 = self.wavelet1(inputs)  #
-    con1 = self.convblock1(wav1)  #12-160
-    
+    # seperate to LL and HL,LH,HH part
+    LL1 = wav1[:, :, :, 0:4]
+    H_1 = wav1[:, :, :, 4:12]
+
+    #with LL only apply one 4-FCN layers
+    conLL1 = self.convblock1_LL(LL1)
+    LL1_re=self.convlayer4(conLL1)
+
+    #with fined details apply the original-like structure
+    conH_1 = self.convblock1(H_1)
     #2
-    wav2 = self.wavelet2(con1)   #160-640
+    wav2 = self.wavelet2(conH_1)   #160-640
     con2 = self.convblock2(wav2) #640-256
 
     #3
     wav3 = self.wavelet3(con2)   #256-1024
     con3 = self.convblock3(wav3)  #1024-256
-    invcon3_expand = self.convlayer1024(con3) #256-1024
+    invcon3_expand = self.convlayer512(con3) #256-1024
 
     invwav3 = self.invwavelet3(invcon3_expand)  #1024-256
     
     #2
     invcon2 = self.invblock2(invwav3 + con2) #256
-    invcon2_expand = self.convlayer640(invcon2)#640
+    invcon2_expand = self.convlayer320(invcon2)#640
     invwav2 = self.invwavelet2(invcon2_expand) #160
 
     #1
-    invcon1 =self.invblock1(invwav2 + con1) #160
-    invcon1_retified = self.convlayer12(invcon1)#12
-    invwav1 = self.invwavelet1(invcon1_retified) #3
+    invcon1 =self.invblock1(invwav2 + conH_1) #160
+    invcon1_retified = self.convlayer8(invcon1)#12
     
-    output = tf.nn.depth_to_space(invwav1, 2, data_format='NHWC', name=None)
+    #combine with the final 
+    subband_all = tf.concat([LL1_re, invcon1_retified], 3)
+    output = self.invwavelet1(subband_all) #3
+    
     return output
     
 
-def build_MWCNN():
-  my_initial = tf.initializers.he_normal()
-  my_regular = tf.keras.regularizers.l2(l=0.0001)
-  kernel_size = (3,3)
-  model = tf.keras.Sequential()
-  # 1.
-  model.add(WaveletConvLayer())
-  
-  for i in range(3): 
-    model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
-      kernel_initializer=my_initial,kernel_regularizer=my_regular))# 
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-  
-  #2.
-  model.add(WaveletConvLayer())
-  for i in range(4): 
-    model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
-      kernel_initializer=my_initial, kernel_regularizer=my_regular))#
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-  
-  #3.
-  model.add(WaveletConvLayer())
-  for i in range(7): 
-    model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
-      kernel_initializer=my_initial, kernel_regularizer=my_regular))#
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-  
-  #3
-  model.add(WaveletInvLayer())
-  for i in range(4): 
-    model.add(layers.Conv2D(256, kernel_size, padding = 'SAME',
-      kernel_initializer=my_initial, kernel_regularizer=my_regular))#
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-  
-  #2
-  model.add(WaveletInvLayer())
-  for i in range(3): 
-    model.add(layers.Conv2D(160, kernel_size, padding = 'SAME',
-      kernel_initializer=my_initial, kernel_regularizer=my_regular))#
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-  
-  model.add(layers.Conv2D(12, kernel_size, padding = 'SAME',
-              kernel_initializer=my_initial ,kernel_regularizer=my_regular))#
-  model.add(WaveletInvLayer())
-  model.build((None, patch_size, patch_size, channel))
-
-  return model

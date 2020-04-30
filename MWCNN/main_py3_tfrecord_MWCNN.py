@@ -26,7 +26,7 @@ if __name__ == '__main__':
     train_dataset = read_and_decode('./patches/MWCNN_train_data.tfrecords')
     val_dataset = read_and_decode('./patches/MWCNN_validation_data.tfrecords')
     #build model
-    model = MWCNN()
+    model = MWCNN_other()
 
     #set up optimizer
     optimizer = tf.optimizers.Adam(learning_rate=0.01, epsilon=1e-8, name='AdamOptimizer')

@@ -6,31 +6,45 @@ import matplotlib.pyplot as plt
 from config import *
 import datetime
 
-#for gradient computation
+#with reg loss
 #@tf.function
+# def grad(model, images, labels, optimizer):
+#     with tf.GradientTape() as tape:
+#         output = model(images, training = True)
+#         reconstructed = images + output
+#         #reconstructed = tf.clip_by_value(images + output, clip_value_min=0., clip_value_max=255.)
+#         loss_RGB = loss_fn(reconstructed, labels)
+#         reg_losses = tf.math.add_n(model.losses)
+#         total_loss = loss_RGB + reg_losses
+#     grads = tape.gradient(total_loss, model.trainable_weights)
+#     optimizer.apply_gradients(zip(grads, model.trainable_weights))
+
+#     return loss_RGB, reg_losses, total_loss, reconstructed
+
+# without reg loss
+@tf.function
 def grad(model, images, labels, optimizer):
     with tf.GradientTape() as tape:
         output = model(images, training = True)
         reconstructed = images + output
         #reconstructed = tf.clip_by_value(images + output, clip_value_min=0., clip_value_max=255.)
         loss_RGB = loss_fn(reconstructed, labels)
-        reg_losses = tf.math.add_n(model.losses)
-        total_loss = loss_RGB + reg_losses
-    grads = tape.gradient(total_loss, model.trainable_weights)
+    grads = tape.gradient(loss_RGB, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
-    return loss_RGB, reg_losses, total_loss, reconstructed
-
+    return loss_RGB, reconstructed
 
 def train_one_epoch(model, dataset, optimizer, writer, ckpt):
     org_psnr = PSNRMetric()
     opt_psnr = PSNRMetric()
     avg_loss = tf.keras.metrics.Mean()
     for images, labels in dataset:
-        loss_RGB, reg_losses, total_loss, reconstructed = grad(model, images, labels, optimizer)
+        loss_RGB, reconstructed = grad(model, images, labels, optimizer)
+        #loss_RGB, reg_losses, total_loss, reconstructed = grad(model, images, labels, optimizer)
         org_psnr(images, labels)
         opt_psnr(reconstructed, labels)
-        avg_loss(total_loss)
+        avg_loss(loss_RGB)
+        #avg_loss(total_loss)
         step = ckpt.step.numpy()
         if int(step) % record_step == 0:
             avg_relative_psnr = opt_psnr.result() - org_psnr.result()
@@ -42,8 +56,8 @@ def train_one_epoch(model, dataset, optimizer, writer, ckpt):
             with writer.as_default():
                 tf.summary.scalar('optimizer_lr_t', optimizer.learning_rate, step = step)
                 tf.summary.scalar('train_loss', avg_loss.result(), step = step)
-                tf.summary.scalar('lossRGB', loss_RGB, step = step)
-                tf.summary.scalar('reg_loss', reg_losses, step = step)
+                #tf.summary.scalar('lossRGB', loss_RGB, step = step)
+                #tf.summary.scalar('reg_loss', reg_losses, step = step)
                 tf.summary.scalar('train_psnr', opt_psnr.result(), step = step)
                 tf.summary.scalar('original_psnr', org_psnr.result(), step = step)
                 tf.summary.scalar('relative_tr_psnr', avg_relative_psnr, step = step)
@@ -66,12 +80,13 @@ def evaluate_model(model, val_dataset, writer, epoch):
         predict_val = images_val + output 
         # Update val metrics
         loss_RGB = loss_fn(predict_val, label_val)
-        reg_losses = tf.math.add_n(model.losses)
-        total_loss = loss_RGB + reg_losses
+        #reg_losses = tf.math.add_n(model.losses)
+        #total_loss = loss_RGB + reg_losses
         #record the things
         org_psnr.update_state(label_val, images_val)
         psnr.update_state(label_val, predict_val)
-        epoch_loss.update_state(total_loss)
+        epoch_loss.update_state(loss_RGB)
+        #epoch_loss.update_state(total_loss)
         ms_ssim.update_state(label_val, predict_val)
     
     val_psnr = psnr.result()

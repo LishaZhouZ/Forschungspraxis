@@ -19,7 +19,7 @@ decay_lr[31:41] = alpha/10
 checkpoint_directory = './tf_ckpts'
 
 if debug_mode == True:
-    batch_size = 8
+    batch_size = 4
     epochs = 20
     record_step = 1
 

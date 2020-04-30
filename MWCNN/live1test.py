@@ -21,7 +21,7 @@ if __name__ == "__main__":
     count = 0
     model = MWCNN()
     ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Downloads/Training20200427/tf_ckpts')).expect_partial()
+    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Downloads/Training20200430/tf_ckpts')).expect_partial()
 
     org_psnr = np.zeros(len(filepaths_label))
     rec_psnr = np.zeros(len(filepaths_label))
@@ -40,10 +40,10 @@ if __name__ == "__main__":
         
         #padding
         shape_input = tf.shape(img_s_input).numpy()
-        padding_up = math.ceil(8-shape_input[0]%8/2)
-        padding_down = math.floor(8-shape_input[0]%8/2)
-        padding_left = math.ceil(8-shape_input[1]%8/2)
-        padding_right = math.floor(8-shape_input[1]%8/2)
+        padding_up = math.ceil(16-shape_input[0]%16/2)
+        padding_down = math.floor(16-shape_input[0]%16/2)
+        padding_left = math.ceil(16-shape_input[1]%16/2)
+        padding_right = math.floor(16-shape_input[1]%16/2)
         paddings = tf.constant([[padding_up, padding_down,], [padding_left, padding_right], [0, 0]])
 
         img_s_input_padded = tf.pad(img_s_input, paddings, "REFLECT")
