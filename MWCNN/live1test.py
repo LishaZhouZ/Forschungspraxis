@@ -12,8 +12,8 @@ import timeit
 
 
 if __name__ == "__main__":
-    dir_label = Path('/home/lisha/Forschungspraxis/images/test/test/groundtruth_live')
-    dir_input = Path('/home/lisha/Forschungspraxis/images/test/test/compressed_Q10_live')
+    dir_label = Path('/home/lisha/Forschungspraxis/images/test/test/groundtruth_5')
+    dir_input = Path('/home/lisha/Forschungspraxis/images/test/test/compressed_Q10_5')
 
     filepaths_label = sorted(dir_label.glob('*'))
     filepaths_input = sorted(dir_input.glob('*'))

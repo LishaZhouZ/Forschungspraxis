@@ -66,8 +66,8 @@ if __name__ == '__main__':
         # Invalid device or cannot modify virtual devices once initialized. 
         pass
 
-    model =tf.keras.Sequential()
-    model.add(WaveletConvLayer())
+    #model =tf.keras.Sequential()
+    #model.add(WaveletConvLayer())
 
 
     #model.add()
@@ -76,14 +76,20 @@ if __name__ == '__main__':
     #model.add(layers.Conv2D(64, (3, 3), activation='relu'))
     #model.summary()
 
-    path = Path('/home/lisha/Forschungspraxis/images/test/test/groundtruth_5/lenna.bmp')
-    
-    img_label = Image.open(path)
-    fraction = np.array(img_label, dtype="float32")
+    path0 = Path('/home/lisha/Forschungspraxis/images/test/test/compressed_Q10_5/airplane.jpeg')
+    path1= Path('/home/lisha/Forschungspraxis/images/test/test/groundtruth_5/airplane.bmp')
+    img0 = Image.open(path0)
+    img1 =Image.open(path1)
+    fraction0 = np.array(img0, dtype="uint8")
+    fraction1 = np.array(img1, dtype="uint8")
+    con2 = np.concatenate(
+             [fraction1, fraction0], axis=1) 
+    plt.imshow(con2)
+    plt.show()
     #a=fraction[:,:,2]
     #a=np.expand_dims(a, axis=2)
-    img_label_s = np.expand_dims(fraction, axis=0)
-    output = model(img_label_s)
+    #img_label_s = np.expand_dims(fraction, axis=0)
+    #output = model(img_label_s)
 
     # print(img_label_s-output)
     # d=np.zeros((512,512,3), dtype='uint8')
@@ -93,32 +99,32 @@ if __name__ == '__main__':
     #temp = np.zeros((256,256,3), dtype='uint8')
     
 
-    a=np.zeros((256,256,3), dtype='uint8')
-    a[:,:,0] =np.clip(output[0,:,:,0], 0, 255)
-    #a[:,:,1] =np.clip(output[0,:,:,1], 0, 255)
-    #a[:,:,2] =np.clip(output[0,:,:,2], 0, 255)
-    b=np.zeros((256,256,3), dtype='uint8')
-    b[:,:,0] =output[0,:,:,3]
-    #b[:,:,1] =output[0,:,:,4]
-    #b[:,:,2] =output[0,:,:,5]
-    c=np.zeros((256,256,3), dtype='uint8')
-    c[:,:,0] = output[0,:,:,6]
-    #c[:,:,1] = output[0,:,:,7]
-    #c[:,:,2] = output[0,:,:,8]
-    d=np.zeros((256,256,3), dtype='uint8')
-    d[:,:,0] =  output[0,:,:,9]
-    #d[:,:,1] =  output[0,:,:,10]
-    #d[:,:,2] =  output[0,:,:,11]
-    con_row1= np.concatenate(
-            [a, b], axis=1)
-    con_row2 =np.concatenate(
-            [c, d], axis=1)
-    con2 = np.concatenate(
-            [con_row1, con_row2], axis=0) 
+    # a=np.zeros((256,256,3), dtype='uint8')
+    # a[:,:,0] =np.clip(output[0,:,:,0], 0, 255)
+    # #a[:,:,1] =np.clip(output[0,:,:,1], 0, 255)
+    # #a[:,:,2] =np.clip(output[0,:,:,2], 0, 255)
+    # b=np.zeros((256,256,3), dtype='uint8')
+    # b[:,:,0] =output[0,:,:,3]
+    # #b[:,:,1] =output[0,:,:,4]
+    # #b[:,:,2] =output[0,:,:,5]
+    # c=np.zeros((256,256,3), dtype='uint8')
+    # c[:,:,0] = output[0,:,:,6]
+    # #c[:,:,1] = output[0,:,:,7]
+    # #c[:,:,2] = output[0,:,:,8]
+    # d=np.zeros((256,256,3), dtype='uint8')
+    # d[:,:,0] =  output[0,:,:,9]
+    # #d[:,:,1] =  output[0,:,:,10]
+    # #d[:,:,2] =  output[0,:,:,11]
+    # con_row1= np.concatenate(
+    #         [a, b], axis=1)
+    # con_row2 =np.concatenate(
+    #         [c, d], axis=1)
+    # con2 = np.concatenate(
+    #         [con_row1, con_row2], axis=0) 
 
-    plt.imshow(con2)
-    plt.axis('off')
+    # plt.imshow(con2)
+    # plt.axis('off')
 
     
 
-    plt.show()
+    # plt.show()
