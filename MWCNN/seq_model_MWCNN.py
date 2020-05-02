@@ -149,13 +149,13 @@ class MWCNN(tf.keras.Model):
         kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
     self.convlayer640 = layers.Conv2D(640, (3,3), padding = 'SAME',
         kernel_initializer = self.my_initial,kernel_regularizer = self.my_regular)
-    self.convlayer12 = layers.Conv2D(48, (3,3), padding = 'SAME',
+    self.convlayer12 = layers.Conv2D(12, (3,3), padding = 'SAME',
         kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
   
   def call(self, inputs):
     
     #former side
-    wav1 = self.wavelet1(input_arranged)  #3-12
+    wav1 = self.wavelet1(inputs)  #3-12
     con1 = self.convblock1(wav1)  #12-160
     
     #2

@@ -1,5 +1,8 @@
 startup
-images/*
+images/train
+images/outcome
+images/split_input
+images/split_label
 logs/*
 .vscode/*
 __pycache__/*

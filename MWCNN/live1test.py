@@ -10,21 +10,21 @@ import math
 import argparse
 import timeit
 
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('--mode', dest='mode', default=1)
-parser.add_argument('--dir_input', dest='dir_input', default=Path('./images/test/live1_qp10'))
-parser.add_argument('--dir_label', dest = 'dir_label', default=Path('./images/test/live1_groundtruth'))
+#parser = argparse.ArgumentParser(description='')
+#parser.add_argument('--mode', dest='mode', type=int,default=1)
+#parser.add_argument('--dir_input', dest='dir_input', default=Path('./images/test/live1_qp10'))
+#parser.add_argument('--dir_label', dest = 'dir_label', default=Path('./images/test/live1_groundtruth'))
 
 
-args = parser.parse_args()
+#args = parser.parse_args()
 
 
 if __name__ == "__main__":
     #
     #
     #choose dataset
-    dir_label = args.dir_label#Path('./images/test/live1_groundtruth')
-    dir_input = args.dir_input#Path('./images/test/live1_qp10')
+    dir_label = Path('./images/test/live1_groundtruth')
+    dir_input = Path('./images/test/live1_qp10')
     
     #dir_label = Path('./images/test/groundtruth_5')
     #dir_input = Path('./images/test/compressed_Q10_5')
@@ -32,22 +32,25 @@ if __name__ == "__main__":
     filepaths_label = sorted(dir_label.glob('*'))
     filepaths_input = sorted(dir_input.glob('*'))
     
-    mode = args.mode  #--can be 1,2,3
+    mode = 1 #--can be 1,2,3
     #model 1---------------
     if mode==1:
         model = MWCNN()
         ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
         ckpt.restore(tf.train.latest_checkpoint(Path('./ckpt'))).expect_partial()
-    if mode==2:
+    elif mode==2:
     #model 2-----------------
         model = MWCNN_m1()
         ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
         ckpt.restore(tf.train.latest_checkpoint(Path('./ckpt-m1'))).expect_partial()
-    if mode ==3:
+    elif mode ==3:
     #model 2---------------
         model = MWCNN_m2()
         ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
         ckpt.restore(tf.train.latest_checkpoint(Path('./ckpt-m2'))).expect_partial()
+    else:
+        print("error")
+    
     
 #---------------------------------------------------------------------------------------
     org_psnr = np.zeros(len(filepaths_label))
@@ -80,7 +83,7 @@ if __name__ == "__main__":
         
         start = timeit.default_timer()
         
-        output = model.predict(img_s_input_batch)
+        output = model(img_s_input_batch, training =False)
         
         stop = timeit.default_timer()
         time[i] = stop - start
