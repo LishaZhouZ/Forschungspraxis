@@ -12,5 +12,3 @@ saved_model/*
 
 tf_ckpts--*/
 events*
-ckpt*
-checkpoint

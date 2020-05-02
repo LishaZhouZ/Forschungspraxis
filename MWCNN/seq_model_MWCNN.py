@@ -153,6 +153,63 @@ class MWCNN(tf.keras.Model):
         kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
   
   def call(self, inputs):
+    
+    #former side
+    wav1 = self.wavelet1(input_arranged)  #3-12
+    con1 = self.convblock1(wav1)  #12-160
+    
+    #2
+    wav2 = self.wavelet2(con1)   #160-640
+    con2 = self.convblock2(wav2) #640-256
+
+    #3
+    wav3 = self.wavelet3(con2)   #256-1024
+    con3 = self.convblock3(wav3)  #1024-256
+    invcon3_expand = self.convlayer1024(con3) #256-1024
+
+    invwav3 = self.invwavelet3(invcon3_expand)  #1024-256
+    
+    #2
+    invcon2 = self.invblock2(invwav3 + con2) #256
+    invcon2_expand = self.convlayer640(invcon2)#640
+    invwav2 = self.invwavelet2(invcon2_expand) #160
+
+    #1
+    invcon1 =self.invblock1(invwav2 + con1) #160
+    invcon1_retified = self.convlayer12(invcon1)#12
+    output = self.invwavelet1(invcon1_retified) #3
+    
+    return output
+
+class MWCNN_m1(tf.keras.Model):
+  def __init__(self):
+    super(MWCNN_m1, self).__init__()
+    self.my_initial = tf.initializers.he_normal()
+    self.my_regular = tf.keras.regularizers.l2(l=0.0001)
+    
+    self.convblock1 = ConvBlock(160, (3,3), self.my_initial, self.my_regular)
+    self.convblock2 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
+    self.convblock3 = ConvBlock(256, (3,3), self.my_initial, self.my_regular)
+
+    self.invblock2 = ConvInvBlock(256, (3,3), self.my_initial, self.my_regular)
+    self.invblock1 = ConvInvBlock(160, (3,3), self.my_initial, self.my_regular)
+    
+    self.wavelet1 = WaveletConvLayer()
+    self.wavelet2 = WaveletConvLayer()
+    self.wavelet3 = WaveletConvLayer()
+    
+    self.invwavelet1 = WaveletInvLayer()
+    self.invwavelet2 = WaveletInvLayer()
+    self.invwavelet3 = WaveletInvLayer()
+
+    self.convlayer1024 = layers.Conv2D(1024, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+    self.convlayer640 = layers.Conv2D(640, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial,kernel_regularizer = self.my_regular)
+    self.convlayer12 = layers.Conv2D(48, (3,3), padding = 'SAME',
+        kernel_initializer = self.my_initial, kernel_regularizer = self.my_regular)
+  
+  def call(self, inputs):
 
     input_arranged = tf.nn.space_to_depth(inputs, 2, data_format='NHWC', name=None)
     
@@ -184,9 +241,9 @@ class MWCNN(tf.keras.Model):
     output = tf.nn.depth_to_space(invwav1, 2, data_format='NHWC', name=None)
     return output
     
-class MWCNN_other(tf.keras.Model):
+class MWCNN_m2(tf.keras.Model):
   def __init__(self):
-    super(MWCNN_other, self).__init__()
+    super(MWCNN_m2, self).__init__()
     self.my_initial = tf.initializers.he_normal()
     self.my_regular = tf.keras.regularizers.l2(l=0.0001)
 

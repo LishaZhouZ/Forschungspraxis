@@ -7,22 +7,49 @@ from PIL import Image
 import numpy as np
 import math
 
+import argparse
 import timeit
 
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('--mode', dest='mode', default=1)
+parser.add_argument('--dir_input', dest='dir_input', default=Path('./images/test/live1_qp10'))
+parser.add_argument('--dir_label', dest = 'dir_label', default=Path('./images/test/live1_groundtruth'))
+
+
+args = parser.parse_args()
 
 
 if __name__ == "__main__":
-    dir_label = Path('/home/lisha/Forschungspraxis/images/test/test/groundtruth_5')
-    dir_input = Path('/home/lisha/Forschungspraxis/images/test/test/compressed_Q10_5')
+    #
+    #
+    #choose dataset
+    dir_label = args.dir_label#Path('./images/test/live1_groundtruth')
+    dir_input = args.dir_input#Path('./images/test/live1_qp10')
+    
+    #dir_label = Path('./images/test/groundtruth_5')
+    #dir_input = Path('./images/test/compressed_Q10_5')
 
     filepaths_label = sorted(dir_label.glob('*'))
     filepaths_input = sorted(dir_input.glob('*'))
-
-    count = 0
-    model = MWCNN()
-    ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
-    ckpt.restore(tf.train.latest_checkpoint('/home/lisha/Downloads/Training20200430/tf_ckpts')).expect_partial()
-
+    
+    mode = args.mode  #--can be 1,2,3
+    #model 1---------------
+    if mode==1:
+        model = MWCNN()
+        ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
+        ckpt.restore(tf.train.latest_checkpoint(Path('./ckpt'))).expect_partial()
+    if mode==2:
+    #model 2-----------------
+        model = MWCNN_m1()
+        ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
+        ckpt.restore(tf.train.latest_checkpoint(Path('./ckpt-m1'))).expect_partial()
+    if mode ==3:
+    #model 2---------------
+        model = MWCNN_m2()
+        ckpt = tf.train.Checkpoint(step=tf.Variable(1), net = model)
+        ckpt.restore(tf.train.latest_checkpoint(Path('./ckpt-m2'))).expect_partial()
+    
+#---------------------------------------------------------------------------------------
     org_psnr = np.zeros(len(filepaths_label))
     rec_psnr = np.zeros(len(filepaths_label))
     
@@ -81,10 +108,10 @@ if __name__ == "__main__":
         
         #padding
         shape_input = tf.shape(img_s_input).numpy()
-        padding_up = math.ceil(8-shape_input[0]%8/2)
-        padding_down = math.floor(8-shape_input[0]%8/2)
-        padding_left = math.ceil(8-shape_input[1]%8/2)
-        padding_right = math.floor(8-shape_input[1]%8/2)
+        padding_up = math.ceil(16-shape_input[0]%16/2)
+        padding_down = math.floor(16-shape_input[0]%16/2)
+        padding_left = math.ceil(16-shape_input[1]%16/2)
+        padding_right = math.floor(16-shape_input[1]%16/2)
         paddings = tf.constant([[padding_up, padding_down,], [padding_left, padding_right], [0, 0]])
 
         img_s_input_padded = tf.pad(img_s_input, paddings, "REFLECT")
